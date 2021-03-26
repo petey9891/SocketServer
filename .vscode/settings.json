@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "atomic": "cpp",
+        "type_traits": "cpp",
+        "thread": "cpp",
+        "system_error": "cpp",
+        "*.ipp": "cpp",
+        "memory": "cpp"
+    }
+}
