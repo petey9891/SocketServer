@@ -1,4 +1,9 @@
+#pragma once
+
 #include <rehoboam-server/common.h>
+#include <rehoboam-server/tsqueue.h>
+#include <rehoboam-server/connection.h>
+#include <thread>
 
 using asio::ip::tcp;
 
@@ -8,11 +13,13 @@ protected:
     asio::io_context io_context;
     std::thread thread_context;
         
-    // std::unique_ptr<connection<T>> m_connection;
-    std::unique_ptr<bool> connection; // to be redefined with connection object
+    std::unique_ptr<connection<T>> serverConnection;
+
+private:
+    tsqueue<owned_message<T>> qMessagesIn;
 
 public:
-    RehoboamClient() = default;
+    RehoboamClient() {};
     virtual ~RehoboamClient() {
         this->Disconnect();
     }
@@ -24,15 +31,14 @@ public:
 			tcp::resolver resolver(this->io_context);
 			tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
 
-            // TODO
-            // this->connection = std::make_unique<connection<T>>(connection<T>::owner::client, this->io_context, asio::ip::tcp::socket(this->io_context), this->qMessagesIn);
+            this->serverConnection = std::make_unique<connection<T>>(connection<T>::owner::client, this->io_context, asio::ip::tcp::socket(this->io_context), this->qMessagesIn);           
 
-            this->connection->ConnectToServer(endpoints);
+            this->serverConnection->ConnectToServer(endpoints);
 
             this->thread_context = std::thread([this]() { this->io_context.run(); });
-        } else (std::exception& e) {
+        } catch (std::exception& e) {
             fprintf(stderr, "Client exception: %s", e.what());
-            return false
+            return false;
         }
 
         return true;
@@ -40,21 +46,19 @@ public:
 
     void Disconnect() {
         if (this->IsConnected()) {
-            // TODO
-            // this->connection->Disconnect();
+            this->serverConnection->Disconnect();
         }
 
         this->io_context.stop();
 
         if (this->thread_context.joinable()) this->thread_context.join();
 
-        // TODO
-        // connection.release();
+        this->serverConnection.release();
     }
 
     bool IsConnected() {
-        if (connection) {
-            return true; // TODO: redefined with connection->IsConnected();
+        if (this->serverConnection) {
+            return this->serverConnection->IsConnected();
         } else {
             return false;
         }

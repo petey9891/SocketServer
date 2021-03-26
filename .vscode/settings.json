@@ -5,6 +5,7 @@
         "thread": "cpp",
         "system_error": "cpp",
         "*.ipp": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "iosfwd": "cpp"
     }
 }
