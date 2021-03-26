@@ -17,7 +17,7 @@ CLIENT_SOURCES := $(wildcard $(CLIENT_SRC_DIR)/*.cpp)
 CLIENT_OBJECTS := $(patsubst $(CLIENT_SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CLIENT_SOURCES))
 COMPILED_CLIENT_OBJECTS := $(wildcard $(OBJ_DIR)/Client.o)
 
-CPPFLAGS :=-std=c++14 -Iinclude -MMD -MP
+CPPFLAGS :=-std=c++17 -Iinclude -MMD -MP
 CXXFLAGS :=-O0 -W -Wall -Wextra -Wno-unused-parameter -D_FILE_OFFSET_BITS=64
 LDLIBS :=-lpthread
 

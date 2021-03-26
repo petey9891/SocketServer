@@ -1,5 +1,6 @@
 #include <rehoboam-server/common.h>
 #include <rehoboam-server/server.h>
+#include <rehoboam-server/connection.h>
 
 
 class Server: public RehoboamServer<MessageType> {
@@ -7,8 +8,16 @@ public:
     Server(uint16_t port): RehoboamServer(port) {};
 
 protected:
-    bool OnClientConnect() override {
+    bool OnClientConnect(std::shared_ptr<connection<MessageType>> client) override {
         return true;
+    }
+
+    void OnMessageRecieved(std::shared_ptr<connection<MessageType>> client, Message<MessageType>& msg) override {
+        switch (msg.header.id) {
+            case MessageType::Server_Ping:
+                printf("We got pinged, batman!\n");
+                break;
+        }
     }
 };
 
@@ -18,7 +27,7 @@ int main(void) {
     server.Start();
 
     while (1) {
-        // server.HandleRequest();
+        server.HandleRequest();
     }
 
     return 0;
