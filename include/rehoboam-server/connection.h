@@ -49,6 +49,7 @@ public:
         // Only servers can connect to clients
         if (this->ownerType == owner::server) {
             if (this->socket.is_open()) {
+                printf("[SERVER] Listening for new messages from client\n");
                 this->ReadHeader();
             }
         }
@@ -82,7 +83,8 @@ public:
     void Send(const Message<T>& msg) {
         asio::post(this->asioContext, 
             [this, msg]() {
-                bool isWritingMessage = this->qMessagesOut.empty();
+                
+                bool isWritingMessage = !this->qMessagesOut.empty();
                 this->qMessagesOut.push_back(msg);
                 if (!isWritingMessage) {
                     this->WriteHeader();

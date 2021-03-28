@@ -8,13 +8,13 @@ public:
     Server(uint16_t port): RehoboamServer(port) {};
 
 protected:
-    bool OnClientConnect(std::shared_ptr<connection<MessageType>> client) override {
+    bool OnClientConnect(std::shared_ptr<connection<MessageType> > client) override {
         return true;
     }
 
-    void OnMessageRecieved(std::shared_ptr<connection<MessageType>> client, Message<MessageType>& msg) override {
+    void OnMessageRecieved(std::shared_ptr<connection<MessageType> > client, Message<MessageType>& msg) override {
         switch (msg.header.id) {
-            case MessageType::Server_Ping:
+            case ServerPing:
                 printf("We got pinged, batman!\n");
                 break;
         }

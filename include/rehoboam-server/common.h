@@ -15,8 +15,8 @@
 #include <memory>
 #include <vector>
 
-enum class MessageType: uint32_t {
-    Server_Ping
+enum MessageType: uint32_t {
+    ServerPing
 };
 
 template <typename T>

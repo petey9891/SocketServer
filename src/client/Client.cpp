@@ -5,7 +5,7 @@ class Client: public RehoboamClient<MessageType> {
 public:
     void PingServer() {
         Message<MessageType> message;
-        message.header.id = MessageType::Server_Ping;
+        message.header.id = ServerPing;
 
         this->Send(message);
     }
@@ -23,7 +23,6 @@ int main(void) {
             client.PingServer();
             first = true;
         }
-
     }
 
     return 0;

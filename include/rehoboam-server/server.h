@@ -68,11 +68,11 @@ public:
 
 
                     if (this->OnClientConnect(conn)) {
-                        this->deqConnections.push_back(std::move(conn));
-                        
-                        this->deqConnections.back()->ConnectToClient(this);
-
                         printf("[SEVER] Connection approved\n");
+                        
+                        this->deqConnections.push_back(std::move(conn));
+                                     
+                        this->deqConnections.back()->ConnectToClient(this);
                     } else {
                         std::cout << "[SERVER] Connection denied from: " << socket.remote_endpoint() << "\n";
                     }
@@ -112,15 +112,15 @@ public:
 
 protected:
     // Server class should override these functions
-    virtual bool OnClientConnect(std::shared_ptr<connection<T>> client) {
+    virtual bool OnClientConnect(std::shared_ptr<connection<T> > client) {
         return false;
     }
 
-    virtual void OnClientDisconnect(std::shared_ptr<connection<T>> client) {
+    virtual void OnClientDisconnect(std::shared_ptr<connection<T> > client) {
 
     }
 
-    virtual void OnMessageRecieved(std::shared_ptr<connection<T>> client, Message<T>& msg) {
+    virtual void OnMessageRecieved(std::shared_ptr<connection<T> > client, Message<T>& msg) {
 
     }
 
