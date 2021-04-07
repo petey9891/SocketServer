@@ -16,10 +16,11 @@ protected:
     tsqueue<OwnedMessage<T> > qMessagesIn;
 
     // Container of active validated connections
-    std::deque<std::shared_ptr<connection<T> >> deqConnections;    
+    std::deque<std::shared_ptr<connection<T>>> deqConnections;    
 
     asio::io_context io_context;
-    std::thread thread_context;
+    std::thread server_thread;
+    std::thread request_thread;
     asio::ip::tcp::acceptor acceptor;
 
 public:
@@ -36,7 +37,7 @@ public:
             this->WaitForConnection();
 
             // Launch the asio context in its own thread
-            this->thread_context = std::thread([this]() { this->io_context.run(); });
+            this->server_thread = std::thread([this]() { this->io_context.run(); });
         } catch (std::exception& e) {
             fprintf(stderr, "[SERVER] Exception %s\n", e.what());
             return false;
@@ -49,7 +50,8 @@ public:
     void Stop() {	
         this->io_context.stop();
 
-        if (this->thread_context.joinable()) this->thread_context.join();
+        if (this->server_thread.joinable()) this->server_thread.join();
+        if (this->request_thread.joinable()) this->request_thread.join();
 
         printf("[SERVER] Stopped\n");
     }
@@ -100,14 +102,18 @@ public:
     }
 
 
-    void HandleRequest() {
-        this->qMessagesIn.wait();
+    void HandleRequests() {
+        this->request_thread = std::thread([this]() { 
+            while (true) {
+                this->qMessagesIn.wait();
+                while (!this->qMessagesIn.empty()) {
+                    auto ownedMessage = this->qMessagesIn.pop_front();
 
-        while (!this->qMessagesIn.empty()) {
-            auto ownedMessage = this->qMessagesIn.pop_front();
-
-            this->OnMessageRecieved(ownedMessage.remote, ownedMessage.message);
-        }
+                    this->OnMessageRecieved(ownedMessage.remote, ownedMessage.message);
+                }
+            }
+        });
+        
     }
 
 protected:

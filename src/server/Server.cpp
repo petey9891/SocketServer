@@ -63,8 +63,10 @@ int main(void) {
     Server server(60000);
     server.Start();
 
-    while (1) {
-        server.HandleRequest();
+    server.HandleRequests();
+
+    while (true) {
+        // This is just here so it doesn't exit the program immediately since it is running in different threads
     }
 
     return 0;
