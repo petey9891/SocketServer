@@ -102,7 +102,7 @@ private:
                     // Check if the message header just sent also had a body
                     if (this->qMessagesOut.front().body.size() > 0) {
                         // It would be nice to also send the body...
-                        // this->WriteBody();
+                        this->WriteBody();
                     } else {
                         this->qMessagesOut.pop_front();
 
@@ -119,7 +119,26 @@ private:
         );
     }
 
-    // ASYNC - Prime context ready to read a message body
+    void WriteBody() {
+        asio::async_write(this->socket, asio::buffer(this->qMessagesOut.front().body.data(), this->qMessagesOut.front().body.size()),
+            [this](std::error_code err, std::size_t length) {
+                if (!err) {
+                    // Sending was successful so we are done with this message
+                    this->qMessagesOut.pop_front();
+
+                    // If there are still messages to send, issue a task to write the header
+                    if (!this->qMessagesOut.empty()) {
+                        this->WriteHeader();
+                    }
+                } else {
+                    printf("Write header fail\n");
+                    this->socket.close(); 
+                }
+            }
+        );
+    }
+
+    // ASYNC - Prime context ready to read a message header
     void ReadHeader() {
         asio::async_read(this->socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
             [this](std::error_code err, std::size_t length) {
@@ -128,12 +147,29 @@ private:
                     if (this->msgTmpIn.header.size > 0) {
                         // It would be nice to know what else was sent...
                         this->msgTmpIn.body.resize(this->msgTmpIn.header.size);
-                        // this->ReadBody();
+                        
+                        this->ReadBody();
                     } else {
                         this->AddToIncomingMessageQueue();
                     }
                 } else {
                     printf("Read header fail\n");
+                    this->socket.close(); 
+                }
+            }
+        );
+    }
+
+    // ASYNC - Prime context ready to read a message body
+    void ReadBody() {
+        // If this function is called then that means the header has already been read and in the request we have a body
+        // The space for that body has already been allocated in the msgTmpIn object
+        asio::async_read(this->socket, asio::buffer(this->msgTmpIn.body.data(), this->msgTmpIn.body.size()),
+            [this](std::error_code err, std::size_t length) {
+                if (!err) {
+                    this->AddToIncomingMessageQueue();
+                } else {
+                    printf("Read body fail\n");
                     this->socket.close(); 
                 }
             }

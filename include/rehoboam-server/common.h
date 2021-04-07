@@ -16,7 +16,14 @@
 #include <vector>
 
 enum MessageType: uint32_t {
-    ServerPing
+    Success,
+
+    ServerPing,
+
+    CubeDisplayOnOff,
+    CubeBrightness,
+    CubePulse,
+    CubeRehoboam
 };
 
 template <typename T>
@@ -38,11 +45,13 @@ struct Message {
     // Pushes data into the message buffer
     template <typename DataType>
     friend Message<T>& operator << (Message<T>& msg, const DataType& data) {
+        static_assert(std::is_standard_layout<DataType>::value, "Data is too complex to be pushed into vector");
+
         // Save the current size of the body, this will be the point where we save the new data
         size_t currentBodySize = msg.body.size();
 
         // Resize the body vector
-        msg.body.resize(msg.body.data() + sizeof(DataType));
+        msg.body.resize(msg.body.size() + sizeof(DataType));
 
         // Copy the data into the new space
         std::memcpy(msg.body.data() + currentBodySize, &data, sizeof(DataType));
@@ -55,18 +64,22 @@ struct Message {
 
     // Pops data from the message buffer
     template <typename DataType>
-    friend Message<T>& operator >> (Message<T>& msg, const DataType& data) {
-        // Save the location at the end of the vector
-        size_t index = msg.body.size() - sizeof(DataType);
+	friend Message<T>& operator >> (Message<T>& msg, DataType& data) {
+        static_assert(std::is_standard_layout<DataType>::value, "Data is too complex to be pulled from vector");
 
-        std::memcpy(&data, msg.body.data() + index, sizeof(DataType));
+        // Cache the location towards the end of the vector where the pulled data starts
+        size_t i = msg.body.size() - sizeof(DataType);
 
-        // Shrink the vector to remove the popped bytes
-        msg.body.resize(index);
+        // Physically copy the data from the vector into the user variable
+        std::memcpy(&data, msg.body.data() + i, sizeof(DataType));
 
-        // Reset message size
+        // Shrink the vector to remove read bytes, and reset end position
+        msg.body.resize(i);
+
+        // Recalculate the message size
         msg.header.size = msg.size();
 
+        // Return the target message so it can be "chained"
         return msg;
     }
 };

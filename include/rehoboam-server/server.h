@@ -13,10 +13,10 @@ template<typename T>
 class RehoboamServer {
 protected:
     // Thread safe queue for incoming messages
-    tsqueue<OwnedMessage<T>> qMessagesIn;
+    tsqueue<OwnedMessage<T> > qMessagesIn;
 
     // Container of active validated connections
-    std::deque<std::shared_ptr<connection<T>>> deqConnections;    
+    std::deque<std::shared_ptr<connection<T> >> deqConnections;    
 
     asio::io_context io_context;
     std::thread thread_context;
