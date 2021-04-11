@@ -25,20 +25,21 @@ protected:
     std::thread server_thread;
     std::thread request_thread;
 
+private:
+    std::string caPath;
+    std::string keyPath;
+
 public:
     // Create the server and listen to the desired port
-    SocketServer(uint16_t port)
-        : acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)), ssl_context(asio::ssl::context::sslv23) 
+    SocketServer(uint16_t port, std::string caPath, std::string keyPath)
+        : acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)), ssl_context(asio::ssl::context::sslv23), caPath(caPath), keyPath(keyPath) 
     {
         this->ssl_context.set_options(
             asio::ssl::context::default_workarounds 
             | asio::ssl::context::no_sslv2
             | asio::ssl::context::single_dh_use);
-        this->ssl_context.set_password_callback([](std::size_t max_length, unsigned int purpose) { 
-            return "test"; 
-        });
-        this->ssl_context.use_certificate_file("cert.pem", asio::ssl::context::pem);
-        this->ssl_context.use_private_key_file("key.pem", asio::ssl::context::pem);
+        this->ssl_context.use_certificate_file(this->caPath, asio::ssl::context::pem);
+        this->ssl_context.use_private_key_file(this->keyPath, asio::ssl::context::pem);
     }
     
     virtual ~SocketServer() {
