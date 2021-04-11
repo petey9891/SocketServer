@@ -123,8 +123,16 @@ public:
                     this->OnMessageRecieved(ownedMessage.remote, ownedMessage.message);
                 }
             }
-        });
-        
+        });    
+    }
+
+    void HandleRequestsNoThread() {
+        this->qMessagesIn.wait();
+        while (!this->qMessagesIn.empty()) {
+            auto ownedMessage = this->qMessagesIn.pop_front();
+
+            this->OnMessageRecieved(ownedMessage.remote, ownedMessage.message);
+        }
     }
 
 protected:
