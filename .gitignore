@@ -33,6 +33,4 @@
 
 .vscode/
 
-include/openssl
-include/crypto
 certs/

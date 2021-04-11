@@ -1,5 +1,5 @@
 #include <rehoboam-server/common.h>
-#include <rehoboam-server/server.h>
+#include <rehoboam-server/SocketServer.h>
 #include <rehoboam-server/connection.h>
 
 class Server: public SocketServer<MessageType> {
@@ -7,7 +7,7 @@ private:
     bool power = false;
 
 public:
-    Server(uint16_t port): SocketServer(port) {};
+    Server(uint16_t port, std::string caPath, std::string keyPath): SocketServer(port, caPath, keyPath) {};
 
 protected:
     bool OnClientConnect(std::shared_ptr<connection<MessageType> > client) override {
@@ -59,7 +59,10 @@ private:
 };
 
 int main(void) {
-    Server server(60000);
+    std::string ca = "server.pem";
+    std::string key = "server-key.pem";
+
+    Server server(60000, ca, key);
     server.Start();
 
     while (true) {

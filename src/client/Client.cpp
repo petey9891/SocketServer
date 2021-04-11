@@ -6,6 +6,8 @@
 
 class Client: public SocketClient<MessageType> {
 public:
+    Client(std::string ca): SocketClient(ca) {}
+
     void OnOff() {
         Message<MessageType> message;
         message.header.id = CubeDisplayOnOff;
@@ -46,7 +48,8 @@ public:
 };
 
 int main(void) {
-    Client client;
+    std::string ca = "server.pem";
+    Client client(ca);
 
     client.Connect("127.0.0.1", 60000);
 
