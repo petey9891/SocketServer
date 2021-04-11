@@ -10,7 +10,7 @@
 using asio::ip::tcp;
 
 template<typename T>
-class RehoboamServer {
+class SocketServer {
 protected:
     // Thread safe queue for incoming messages
     tsqueue<OwnedMessage<T> > qMessagesIn;
@@ -19,15 +19,29 @@ protected:
     std::deque<std::shared_ptr<connection<T>>> deqConnections;    
 
     asio::io_context io_context;
+    asio::ip::tcp::acceptor acceptor;
+    asio::ssl::context ssl_context;
+
     std::thread server_thread;
     std::thread request_thread;
-    asio::ip::tcp::acceptor acceptor;
 
 public:
     // Create the server and listen to the desired port
-    RehoboamServer(uint16_t port): acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)) {}
+    SocketServer(uint16_t port)
+        : acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)), ssl_context(asio::ssl::context::sslv23) 
+    {
+        this->ssl_context.set_options(
+            asio::ssl::context::default_workarounds 
+            | asio::ssl::context::no_sslv2
+            | asio::ssl::context::single_dh_use);
+        this->ssl_context.set_password_callback([](std::size_t max_length, unsigned int purpose) { 
+            return "test"; 
+        });
+        this->ssl_context.use_certificate_file("cert.pem", asio::ssl::context::pem);
+        this->ssl_context.use_private_key_file("key.pem", asio::ssl::context::pem);
+    }
     
-    virtual ~RehoboamServer() {
+    virtual ~SocketServer() {
         this->Stop();
     }
 
@@ -58,29 +72,26 @@ public:
 
     // ASYNC    
     void WaitForConnection() {
-        this->acceptor.async_accept(
-            [this](std::error_code ec, asio::ip::tcp::socket socket) {
+        std::shared_ptr<connection<T>> conn = std::make_shared<connection<T>>(connection<T>::owner::server, this->io_context, this->ssl_context, this->qMessagesIn);
+        this->acceptor.async_accept(conn->socket(),
+            [this, conn](std::error_code err) {
                 // Triggered by incoming connection request
-                if (!ec) {
+                if (!err) {
                     // Display some useful(?) information
-                    std::cout << "[SERVER] New Connection: " << socket.remote_endpoint() << "\n";
-
-                    // Create a new conneciton to handle the client
-                    std::shared_ptr<connection<T>> conn = std::make_shared<connection<T>>(connection<T>::owner::server, this->io_context, std::move(socket), this->qMessagesIn);
-
+                    std::cout << "[SERVER] New Connection: " << conn->socket().remote_endpoint() << "\n";
 
                     if (this->OnClientConnect(conn)) {
-                        printf("[SEVER] Connection approved\n");
+                        printf("[SERVER] Connection approved\n");
                         
                         this->deqConnections.push_back(std::move(conn));
                                      
                         this->deqConnections.back()->ConnectToClient(this);
                     } else {
-                        std::cout << "[SERVER] Connection denied from: " << socket.remote_endpoint() << "\n";
+                        std::cout << "[SERVER] Connection denied from: " << conn->socket().remote_endpoint() << "\n";
                     }
                 }
                 else {
-                    printf("[SERVER] New Connection Error: %s\n", ec.message().c_str());
+                    printf("[SERVER] New Connection Error: %s\n", err.message().c_str());
                 }
 
                 // Prime the asio context with more work - again simply wait for

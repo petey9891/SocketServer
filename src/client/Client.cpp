@@ -4,7 +4,7 @@
 #include <iostream>
 #include <chrono>
 
-class Client: public RehoboamClient<MessageType> {
+class Client: public SocketClient<MessageType> {
 public:
     void OnOff() {
         Message<MessageType> message;
@@ -56,6 +56,7 @@ int main(void) {
 
     bool waitingForAck = false;
     while (client.IsConnected()) {
+        printf("\n>>> ");
         std::cin >> input;
 
         if (input == '1') {
@@ -69,7 +70,6 @@ int main(void) {
             if (brightness < 1 || brightness > 100) {
                 printf("Brightness must be within 1-100\n");
             } else  {
-                printf("%d\n", brightness);
                 client.Brightness(brightness);
                 waitingForAck = true;
             }

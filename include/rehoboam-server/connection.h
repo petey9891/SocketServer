@@ -6,7 +6,9 @@ using asio::ip::tcp;
 
 // foward declare
 template <typename T>
-class RehoboamServer;
+class SocketServer;
+
+typedef asio::ssl::stream<asio::ip::tcp::socket> ssl_socket;
 
 template <typename T>
 class connection: public std::enable_shared_from_this<connection<T>> {
@@ -22,7 +24,7 @@ protected:
     asio::io_context& asioContext;
 
     // Each connection has a unique socket to a remote 
-    asio::ip::tcp::socket socket;
+    ssl_socket _socket;
 
     // All messages to be sent to the remove side
     tsqueue<Message<T>> qMessagesOut;
@@ -30,14 +32,14 @@ protected:
     // All messages that are incoming to the parent
     tsqueue<OwnedMessage<T>>& qMessagesIn;
 
-    // A temporary message to be passed around
+    // A temporary message ato be passed around
     Message<T> msgTmpIn;
 
     owner ownerType;
 
 public:
-    connection(owner parent, asio::io_context& asioContext, tcp::socket socket, tsqueue<OwnedMessage<T>>& qIn)
-        : asioContext(asioContext), socket(std::move(socket)), qMessagesIn(qIn)
+    connection(owner parent, asio::io_context& asioContext, asio::ssl::context& ssl_context, tsqueue<OwnedMessage<T>>& qIn)
+        : asioContext(asioContext), _socket(asioContext, ssl_context), qMessagesIn(qIn)
     {
         this->ownerType = parent;
     }
@@ -45,23 +47,42 @@ public:
     virtual ~connection() {}
 
 public:
-    void ConnectToClient(RehoboamServer<T>* server) {
+    ssl_socket::lowest_layer_type& socket() {
+        return this->_socket.lowest_layer();
+    }
+
+    void ConnectToClient(SocketServer<T>* server) {
         // Only servers can connect to clients
         if (this->ownerType == owner::server) {
-            if (this->socket.is_open()) {
-                printf("[SERVER] Listening for new messages from client\n");
-                this->ReadHeader();
-            }
+            this->_socket.async_handshake(asio::ssl::stream_base::server,
+                [this](const std::error_code err) {
+                    if (!err) {
+                        this->ReadHeader();
+                    } else {
+                        printf("[SERVER] Handshake Error: %s\n", err.message().c_str());
+                    }
+                }
+            );
         }
     }
 
     void ConnectToServer(const asio::ip::tcp::resolver::results_type& endpoints) {
         // Only clients can connect to a server
         if (this->ownerType == owner::client) {
-            asio::async_connect(this->socket, endpoints,
+            asio::async_connect(this->socket(), endpoints,
                 [this](std::error_code err, asio::ip::tcp::endpoint endpoint) {
                     if (!err) {
-                        this->ReadHeader();
+                        this->_socket.async_handshake(asio::ssl::stream_base::client,
+                            [this](std::error_code hErr) {
+                                if (!hErr) {
+                                    this->ReadHeader();
+                                } else {
+                                    printf("[CLIENT] Handshake Error: %s\n", hErr.message().c_str());
+                                }
+                            }
+                        );
+                    }  else {
+                        printf("[CLIENT] Connection Error: %s\n", err.message().c_str());
                     }
                 }
             );
@@ -70,12 +91,13 @@ public:
 
     void Disconnect() {
         if (this->IsConnected()) {
-            asio::post(this->asioContext, [this]() { this->socket.close(); });
+            asio::post(this->asioContext, [this]() { this->socket().close(); });
         }
     }
 
     bool IsConnected() const {
-        return this->socket.is_open();
+        // Can't call this->socket() here
+        return this->_socket.lowest_layer().is_open();
     }
 
 public:
@@ -96,7 +118,7 @@ public:
 private:
     // ASYNC - Prime context to write a message header
     void WriteHeader() {
-        asio::async_write(this->socket, asio::buffer(&this->qMessagesOut.front().header, sizeof(MessageHeader<T>)),
+        asio::async_write(this->_socket, asio::buffer(&this->qMessagesOut.front().header, sizeof(MessageHeader<T>)),
             [this](std::error_code err, std::size_t length) {
                 if (!err) {
                     // Check if the message header just sent also had a body
@@ -113,14 +135,14 @@ private:
                     }
                 } else {
                     printf("Write header fail\n");
-                    this->socket.close();
+                    this->socket().close();
                 }
             }
         );
     }
 
     void WriteBody() {
-        asio::async_write(this->socket, asio::buffer(this->qMessagesOut.front().body.data(), this->qMessagesOut.front().body.size()),
+        asio::async_write(this->_socket, asio::buffer(this->qMessagesOut.front().body.data(), this->qMessagesOut.front().body.size()),
             [this](std::error_code err, std::size_t length) {
                 if (!err) {
                     // Sending was successful so we are done with this message
@@ -132,7 +154,7 @@ private:
                     }
                 } else {
                     printf("Write header fail\n");
-                    this->socket.close(); 
+                    this->socket().close();
                 }
             }
         );
@@ -140,7 +162,7 @@ private:
 
     // ASYNC - Prime context ready to read a message header
     void ReadHeader() {
-        asio::async_read(this->socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
+        asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
             [this](std::error_code err, std::size_t length) {
                 if (!err) {
                     // Check if the header just read also has a body
@@ -154,7 +176,7 @@ private:
                     }
                 } else {
                     printf("Read header fail\n");
-                    this->socket.close(); 
+                    this->socket().close(); 
                 }
             }
         );
@@ -164,13 +186,13 @@ private:
     void ReadBody() {
         // If this function is called then that means the header has already been read and in the request we have a body
         // The space for that body has already been allocated in the msgTmpIn object
-        asio::async_read(this->socket, asio::buffer(this->msgTmpIn.body.data(), this->msgTmpIn.body.size()),
+        asio::async_read(this->_socket, asio::buffer(this->msgTmpIn.body.data(), this->msgTmpIn.body.size()),
             [this](std::error_code err, std::size_t length) {
                 if (!err) {
                     this->AddToIncomingMessageQueue();
                 } else {
                     printf("Read body fail\n");
-                    this->socket.close(); 
+                    this->socket().close();
                 }
             }
         );

@@ -2,12 +2,12 @@
 #include <rehoboam-server/server.h>
 #include <rehoboam-server/connection.h>
 
-class Server: public RehoboamServer<MessageType> {
+class Server: public SocketServer<MessageType> {
 private:
     bool power = false;
 
 public:
-    Server(uint16_t port): RehoboamServer(port) {};
+    Server(uint16_t port): SocketServer(port) {};
 
 protected:
     bool OnClientConnect(std::shared_ptr<connection<MessageType> > client) override {
@@ -57,7 +57,6 @@ private:
         this->MessageClient(client, res);
     }
 };
-
 
 int main(void) {
     Server server(60000);
