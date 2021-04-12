@@ -21,6 +21,7 @@ enum MessageType: uint32_t {
     Success,
 
     ServerPing,
+    ServerShutdown,
 
     CubeDisplayOnOff,
     CubeBrightness,
