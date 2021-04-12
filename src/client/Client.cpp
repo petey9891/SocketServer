@@ -45,6 +45,12 @@ public:
 
         this->Send(message);
     }
+
+    void Shutdown() {
+        Message<MessageType> message;
+        message.header.id = ServerShutdown;
+        this->Send(message);
+    }
 };
 
 int main(void) {
@@ -53,7 +59,7 @@ int main(void) {
 
     client.Connect("127.0.0.1", 60000);
 
-    printf("Commands:\n\n1)\tOn/Off\n2)\tBrightness <value>\n3)\tPulse\n4)\tRehoboam\n5)\tPing\n");
+    printf("Commands:\n\n1)\tOn/Off\n2)\tBrightness <value>\n3)\tPulse\n4)\tRehoboam\n5)\tPing\n6)\tShutdown\n");
 
     uint8_t input;
 
@@ -67,7 +73,7 @@ int main(void) {
             waitingForAck = true;
         } else if (input == '2') {
             int brightness;
-            printf("Input a brightness level: ");
+            printf(">>> Input a brightness level: ");
             std::cin >> brightness;
 
             if (brightness < 1 || brightness > 100) {
@@ -85,6 +91,15 @@ int main(void) {
         } else if (input == '5') {
             client.Ping();
             waitingForAck = true;
+        } else if (input == '6') {
+            char confirm;
+            printf(">>> Are you sure you want to shutdown? (y/n): ");
+            std::cin >> confirm;
+
+            if (confirm == 'y') {
+                client.Shutdown();
+                waitingForAck = true;
+            }
         }
 
         while (waitingForAck) {  
@@ -105,6 +120,8 @@ int main(void) {
             }
         }
     }
+
+    client.Disconnect();
 
     return 0;
 }
