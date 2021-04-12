@@ -18,9 +18,10 @@ protected:
 private:
     tsqueue<OwnedMessage<T>> qMessagesIn;
     std::string caPath;
+    std::string keyPath;
 
 public:
-    SocketClient(std::string caPath): caPath(caPath) {};
+    SocketClient(std::string caPath, std::string keyPath): caPath(caPath), keyPath(keyPath) {};
     virtual ~SocketClient() {
         this->Disconnect();
     }
@@ -34,8 +35,17 @@ public:
 			tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
 
             asio::ssl::context ssl_context(asio::ssl::context::sslv23);
-            ssl_context.load_verify_file(this->caPath);
+
+            ssl_context.set_options(
+                asio::ssl::context::default_workarounds 
+                | asio::ssl::context::no_sslv2
+                | asio::ssl::context::single_dh_use);
+
             ssl_context.set_verify_mode(asio::ssl::verify_peer | asio::ssl::verify_fail_if_no_peer_cert);
+            ssl_context.load_verify_file(this->caPath);
+
+            ssl_context.use_certificate_file(this->caPath, asio::ssl::context::pem);
+            ssl_context.use_private_key_file(this->keyPath, asio::ssl::context::pem);
 
             this->m_connection = std::make_unique<connection<T>>(connection<T>::owner::client, this->io_context, ssl_context, this->qMessagesIn);           
 

@@ -38,6 +38,13 @@ public:
             asio::ssl::context::default_workarounds 
             | asio::ssl::context::no_sslv2
             | asio::ssl::context::single_dh_use);
+
+        /**
+        *   verify client auth
+        */
+        this->ssl_context.set_verify_mode(asio::ssl::verify_peer | asio::ssl::verify_fail_if_no_peer_cert);
+        this->ssl_context.load_verify_file(this->caPath);
+
         this->ssl_context.use_certificate_file(this->caPath, asio::ssl::context::pem);
         this->ssl_context.use_private_key_file(this->keyPath, asio::ssl::context::pem);
     }

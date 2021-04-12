@@ -6,7 +6,7 @@
 
 class Client: public SocketClient<MessageType> {
 public:
-    Client(std::string ca): SocketClient(ca) {}
+    Client(std::string ca, std::string key): SocketClient(ca, key) {}
 
     void OnOff() {
         Message<MessageType> message;
@@ -55,7 +55,8 @@ public:
 
 int main(void) {
     std::string ca = "server.pem";
-    Client client(ca);
+    std::string key = "server-key.pem";
+    Client client(ca, key);
 
     client.Connect("127.0.0.1", 60000);
 
