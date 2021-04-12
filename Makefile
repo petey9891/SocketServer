@@ -1,7 +1,7 @@
 CC=clang++
 
-SERVER_SRC_DIR := src/server
-CLIENT_SRC_DIR := src/client
+SERVER_SRC_DIR := examples/server
+CLIENT_SRC_DIR := examples/client
 OBJ_DIR := build
 BIN_DIR := bin
 
