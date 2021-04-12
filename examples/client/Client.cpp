@@ -1,5 +1,5 @@
-#include <rehoboam-server/common.h>
-#include <rehoboam-server/client.h>
+#include <SocketServer/common.h>
+#include <SocketServer/SocketClient.h>
 
 #include <iostream>
 #include <chrono>
@@ -90,7 +90,7 @@ int main(void) {
             waitingForAck = true;
         } else if (input == '5') {
             client.Ping();
-            waitingForAck = true;
+            // waitingForAck = true;
         } else if (input == '6') {
             char confirm;
             printf(">>> Are you sure you want to shutdown? (y/n): ");
@@ -102,23 +102,23 @@ int main(void) {
             }
         }
 
-        while (waitingForAck) {  
-            if (!client.IncomingMessages().empty()) {
-                Message<MessageType> msg = client.IncomingMessages().pop_front().message;
+        // while (waitingForAck) {  
+        //     if (!client.IncomingMessages().empty()) {
+        //         Message<MessageType> msg = client.IncomingMessages().pop_front().message;
 
-                if (msg.header.id == Success) {
-                    printf("request is acknowleged\n");
-                    waitingForAck = false;
-                } else if (msg.header.id == ServerPing) {
-                    // Server has responded to a ping request
-                    std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
-                    std::chrono::system_clock::time_point timeThen;
-                    msg >> timeThen;
-                    std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
-                    waitingForAck = false;
-                }
-            }
-        }
+        //         if (msg.header.id == Success) {
+        //             printf("request is acknowleged\n");
+        //             waitingForAck = false;
+        //         } else if (msg.header.id == ServerPing) {
+        //             // Server has responded to a ping request
+        //             std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
+        //             std::chrono::system_clock::time_point timeThen;
+        //             msg >> timeThen;
+        //             std::cout << "Ping: " << std::chrono::duration<double>(timeNow - timeThen).count() << "\n";
+        //             waitingForAck = false;
+        //         }
+        //     }
+        // }
     }
 
     client.Disconnect();
