@@ -7,7 +7,5 @@ COPY . .
 
 RUN make
 
-RUN apk del .build-deps make g++
-
 CMD [ "bin/ServerRelay" ]
 
