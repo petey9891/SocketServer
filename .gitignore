@@ -36,3 +36,5 @@
 certs/
 examples/config.h
 src/config.h
+bin/examples
+build/examples
