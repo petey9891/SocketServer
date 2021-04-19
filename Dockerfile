@@ -1,4 +1,4 @@
-FROM alpine:3.13
+FROM --platform=x86_64 alpine:3.13
 WORKDIR /server
 COPY . .
 
