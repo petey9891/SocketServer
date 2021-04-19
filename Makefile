@@ -11,7 +11,7 @@ COMPILED_SERVER_OBJECTS := $(wildcard $(OBJ_DIR)/ServerRelay.o)
 
 CPPFLAGS :=-std=c++17 -Iinclude -MMD -MP
 CXXFLAGS :=-O0 -W -Wall -Wextra -Wno-unused-parameter -D_FILE_OFFSET_BITS=64
-LDLIBS :=-Llib -lssl -ldl -lcrypto -lpthread
+LDLIBS :=-Llib -lssl -lcrypto -ldl -lpthread
 
 .PHONY: server
 
