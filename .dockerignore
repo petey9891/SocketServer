@@ -1,0 +1,13 @@
+build/
+examples/
+include/
+lib/
+src/
+.dockerignore
+.gitignore
+docker.run.sh
+Dockerfile
+LICENSE
+.dockerignore
+Makefile
+README.md
