@@ -1,0 +1,10 @@
+build/
+examples/
+lib/
+.dockerignore
+.gitignore
+docker.run.sh
+Dockerfile
+LICENSE
+.dockerignore
+README.md
