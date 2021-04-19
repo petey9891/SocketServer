@@ -8,6 +8,9 @@ public:
     ServerRelay(uint16_t port, std::string caPath, std::string keyPath): SocketServer(port, caPath, keyPath) {};
 
 protected:
+    bool OnClientConnect(std::shared_ptr<SocketConnection<MessageType> > client) override {
+        return true;
+    }
     void OnMessageRecieved(std::shared_ptr<SocketConnection<MessageType> > client, Message<MessageType>& msg) override {
         switch (msg.header.id) {
             case ServerPing:
@@ -36,7 +39,6 @@ protected:
 };
 
 int main(void) {
-    // ServerRelay server(port, caPath, keyPath);
     ServerRelay server(port, caPath, keyPath);
     server.Start();
 

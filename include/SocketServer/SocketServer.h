@@ -65,7 +65,7 @@ public:
             return false;
         }
 
-        printf("[SERVER] Started\n");
+        std::cout << "[SERVER] Started" << std::endl;
         return true;
     };
 
@@ -75,7 +75,7 @@ public:
         if (this->server_thread.joinable()) this->server_thread.join();
         if (this->request_thread.joinable()) this->request_thread.join();
 
-        printf("[SERVER] Stopped\n");
+        std::cout << "[SERVER] Stopped" << std::endl;
     }
 
     // ASYNC    
@@ -89,7 +89,7 @@ public:
                     std::cout << "[SERVER] New Connection: " << conn->socket().remote_endpoint() << "\n";
 
                     if (this->OnClientConnect(conn)) {
-                        printf("[SERVER] Connection approved\n");
+                        std::cout << "[SERVER] Connection approved" << std::endl;
                         
                         this->deqConnections.push_back(std::move(conn));
                                      
@@ -99,7 +99,7 @@ public:
                     }
                 }
                 else {
-                    printf("[SERVER] New Connection Error: %s\n", err.message().c_str());
+                    std::cout << "[SERVER] New Connection Error: " << err.message() << std::endl;
                 }
 
                 // Prime the asio context with more work - again simply wait for
@@ -127,11 +127,10 @@ public:
             // Make sure the client is connected
             if (client && client->IsConnected()) {
                 if (client != pIgnoreClient) {
-                    printf("[SERVER] Sending message to client\n");
                     client->Send(msg);
                 }
             } else {
-                printf("[SERVER] Hmmm this client seems to have disconnected\n");
+                std::cout << "[SERVER] Hmmm this client seems to have disconnected" << std::endl;
                 // This client shouldn't be contacted, so assume it has been disconnected
                 OnClientDisconnect(client);
                 client.reset();

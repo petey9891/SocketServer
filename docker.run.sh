@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # build the docker image
+docker stop server-relay
 docker rm server-relay
 docker rmi server-relay
 docker build -t server-relay .
