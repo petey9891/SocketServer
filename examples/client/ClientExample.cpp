@@ -55,7 +55,7 @@ public:
 };
 
 int main(void) {
-    Client client(certPath, keyPath, caPath);
+    Client client(clientCertPath, clientKeyPath, caPath);
 
     client.Connect(host, port);
 

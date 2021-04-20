@@ -46,7 +46,7 @@ public:
 };
 
 int main(void) {
-    Cube cube(certPath, keyPath, caPath);
+    Cube cube(clientCertPath, clientKeyPath, caPath);
 
     cube.Connect(host, port);
 
