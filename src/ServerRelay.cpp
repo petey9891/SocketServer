@@ -5,7 +5,7 @@
 
 class ServerRelay: public SocketServer<MessageType> {
 public:
-    ServerRelay(uint16_t port, std::string caPath, std::string keyPath): SocketServer(port, caPath, keyPath) {};
+    ServerRelay(uint16_t port, std::string certPath, std::string keyPath, std::string caPath): SocketServer(port, certPath, keyPath, caPath) {};
 
 protected:
     bool OnClientConnect(std::shared_ptr<SocketConnection<MessageType> > client) override {
@@ -39,7 +39,7 @@ protected:
 };
 
 int main(void) {
-    ServerRelay server(port, caPath, keyPath);
+    ServerRelay server(port, certPath, keyPath, caPath);
     server.Start();
 
     while (true) {
