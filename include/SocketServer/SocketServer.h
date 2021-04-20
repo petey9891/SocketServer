@@ -26,13 +26,14 @@ protected:
     std::thread request_thread;
 
 private:
-    std::string caPath;
+    std::string certPath;
     std::string keyPath;
+    std::string caPath;
 
 public:
     // Create the server and listen to the desired port
-    SocketServer(uint16_t port, std::string caPath, std::string keyPath)
-        : acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)), ssl_context(asio::ssl::context::sslv23), caPath(caPath), keyPath(keyPath) 
+    SocketServer(uint16_t port, std::string certPath, std::string keyPath, std::string caPath)
+        : acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)), ssl_context(asio::ssl::context::sslv23), certPath(certPath), keyPath(keyPath), caPath(caPath)
     {
         this->ssl_context.set_options(
             asio::ssl::context::default_workarounds 
@@ -45,7 +46,7 @@ public:
         this->ssl_context.set_verify_mode(asio::ssl::verify_peer | asio::ssl::verify_fail_if_no_peer_cert);
         this->ssl_context.load_verify_file(this->caPath);
 
-        this->ssl_context.use_certificate_file(this->caPath, asio::ssl::context::pem);
+        this->ssl_context.use_certificate_file(this->certPath, asio::ssl::context::pem);
         this->ssl_context.use_private_key_file(this->keyPath, asio::ssl::context::pem);
     }
     

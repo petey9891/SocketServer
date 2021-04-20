@@ -5,12 +5,12 @@
 #include <chrono>
 #include "../config.h"
 
-class Client: public SocketClient<MessageType> {
+class Cube: public SocketClient<MessageType> {
 private:
     bool power = false;
 
 public:
-    Client(std::string ca, std::string key): SocketClient(ca, key) {}
+    Cube(std::string cert, std::string key, std::string ca): SocketClient(cert, key, ca) {}
 
     void OnMessageRecieved(Message<MessageType>& msg) override {
         switch (msg.header.id) {
@@ -46,16 +46,16 @@ public:
 };
 
 int main(void) {
-    Client client(caPath, keyPath);
+    Cube cube(certPath, keyPath, caPath);
 
-    client.Connect(host, port);
+    cube.Connect(host, port);
 
-    printf("[CLIENT] Connected\n");
+    printf("[CUBE] Connected\n");
     while (true) {
-        client.HandleMessagesNoThread();
+        cube.HandleMessagesNoThread();
     }
 
-    client.Disconnect();
+    cube.Disconnect();
 
     return 0;
 }

@@ -5,7 +5,7 @@
 
 class Server: public SocketServer<MessageType> {
 public:
-    Server(uint16_t port, std::string caPath, std::string keyPath): SocketServer(port, caPath, keyPath) {};
+    Server(uint16_t port, std::string certPath, std::string keyPath, std::string caPath): SocketServer(port, certPath, keyPath, caPath) {};
 
 protected:
     bool OnClientConnect(std::shared_ptr<SocketConnection<MessageType> > client) override {
@@ -53,7 +53,7 @@ private:
 };
 
 int main(void) {
-    Server server(port, caPath, keyPath);
+    Server server(port, certPath, keyPath, caPath);
     server.Start();
 
     while (true) {

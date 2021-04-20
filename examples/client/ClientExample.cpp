@@ -7,7 +7,7 @@
 
 class Client: public SocketClient<MessageType> {
 public:
-    Client(std::string ca, std::string key): SocketClient(ca, key) {}
+    Client(std::string cert, std::string key, std::string ca): SocketClient(cert, key, ca) {}
 
     void OnOff() {
         Message<MessageType> message;
@@ -55,7 +55,7 @@ public:
 };
 
 int main(void) {
-    Client client(caPath, keyPath);
+    Client client(certPath, keyPath, caPath);
 
     client.Connect(host, port);
 
