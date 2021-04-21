@@ -93,7 +93,7 @@ public:
          conn->ssl_socket_stream().async_handshake(asio::ssl::stream_base::server,
             [this, conn](const std::error_code err) {
                 if (!err) {
-                    std::cout << "[SERVER] Connection approved" << endl;
+                    std::cout << "[SERVER] Connection approved" << std::endl;
                     conn->ReadHeaderFromClient(this, conn);
                 } else {
                     std::cout << "[SERVER] Handshake Error: " << err.message() << std::endl;
