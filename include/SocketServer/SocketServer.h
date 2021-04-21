@@ -16,7 +16,7 @@ protected:
     tsqueue<OwnedMessage<T> > qMessagesIn;
 
     // Container of active validated connections
-    std::deque<std::shared_ptr<SocketConnection<T>>> deqConnections;    
+    std::deque<std::shared_ptr<SocketConnection<T>>> deqConnections;   
 
     asio::io_context io_context;
     asio::ip::tcp::acceptor acceptor;
@@ -94,7 +94,7 @@ public:
                         
                         this->deqConnections.push_back(std::move(conn));
                                      
-                        this->deqConnections.back()->ConnectToClient(this);
+                        this->deqConnections.back()->ConnectToClient(this, conn);
                     } else {
                         std::cout << "[SERVER] Connection denied from: " << conn->socket().remote_endpoint() << "\n";
                     }
@@ -122,8 +122,6 @@ public:
     }
 
     void MessageAllClients(const Message<T>& msg, std::shared_ptr<SocketConnection<T>> pIgnoreClient = nullptr) {
-        bool invalidClientsExist = false;
-
         for (auto& client : this->deqConnections) {
             // Make sure the client is connected
             if (client && client->IsConnected()) {
@@ -131,18 +129,10 @@ public:
                     client->Send(msg);
                 }
             } else {
-                std::cout << "[SERVER] Hmmm this client seems to have disconnected" << std::endl;
                 // This client shouldn't be contacted, so assume it has been disconnected
                 OnClientDisconnect(client);
                 client.reset();
-
-                invalidClientsExist = true;
             }
-        }
-
-        // Remove dead clients all in one go
-        if (invalidClientsExist) {
-            this->deqConnections.erase(std::remove(this->deqConnections.begin(), this->deqConnections.end(), nullptr), this->deqConnections.end());
         }
     }
 
@@ -166,6 +156,10 @@ public:
 
             this->OnMessageRecieved(ownedMessage.remote, ownedMessage.message);
         }
+    }
+
+    void removeConnection(std::shared_ptr<SocketConnection<T>> conn) {
+        this->deqConnections.erase(std::remove(this->deqConnections.begin(), this->deqConnections.end(), conn), this->deqConnections.end());
     }
 
 protected:

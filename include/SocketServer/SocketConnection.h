@@ -51,13 +51,13 @@ public:
         return this->_socket.lowest_layer();
     }
 
-    void ConnectToClient(SocketServer<T>* server) {
+    void ConnectToClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
         // Only servers can connect to clients
         if (this->ownerType == owner::server) {
             this->_socket.async_handshake(asio::ssl::stream_base::server,
-                [this](const std::error_code err) {
+                [this, server, conn](const std::error_code err) {
                     if (!err) {
-                        this->ReadHeader();
+                        this->ReadHeaderFromClient(server, conn);
                     } else {
                         printf("[SERVER] Handshake Error: %s\n", err.message().c_str());
                     }
@@ -75,7 +75,7 @@ public:
                         this->_socket.async_handshake(asio::ssl::stream_base::client,
                             [this](std::error_code hErr) {
                                 if (!hErr) {
-                                    this->ReadHeader();
+                                    this->ReadHeaderFromServer();
                                 } else {
                                     printf("[CLIENT] Handshake Error: %s\n", hErr.message().c_str());
                                 }
@@ -160,8 +160,31 @@ private:
         );
     }
 
+    void ReadHeaderFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
+        asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
+            [this, server, conn](std::error_code err, std::size_t length) {
+                if (!err) {
+                    // Check if the header just read also has a body
+                    if (this->msgTmpIn.header.size > 0) {
+                        // It would be nice to know what else was sent...
+                        this->msgTmpIn.body.resize(this->msgTmpIn.header.size);
+                        
+                        this->ReadBodyFromClient(server, conn);
+                    } else {
+                        this->AddToIncomingMessageQueueFromClient(server, conn);
+                    }
+                } else {
+                    this->socket().close(); 
+                    server->removeConnection(conn);
+                    printf("[SERVER] Disconnected client from server\n");
+
+                }
+            }
+        );
+    }
+
     // ASYNC - Prime context ready to read a message header
-    void ReadHeader() {
+    void ReadHeaderFromServer() {
         asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
             [this](std::error_code err, std::size_t length) {
                 if (!err) {
@@ -170,26 +193,26 @@ private:
                         // It would be nice to know what else was sent...
                         this->msgTmpIn.body.resize(this->msgTmpIn.header.size);
                         
-                        this->ReadBody();
+                        this->ReadBodyFromServer();
                     } else {
-                        this->AddToIncomingMessageQueue();
+                        this->AddToIncomingMessageQueueFromServer();
                     }
                 } else {
-                    printf("Read header fail\n");
                     this->socket().close(); 
+                    printf("[CLIENT] Disconnected from server\n");
                 }
             }
         );
     }
 
     // ASYNC - Prime context ready to read a message body
-    void ReadBody() {
+    void ReadBodyFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
         // If this function is called then that means the header has already been read and in the request we have a body
         // The space for that body has already been allocated in the msgTmpIn object
         asio::async_read(this->_socket, asio::buffer(this->msgTmpIn.body.data(), this->msgTmpIn.body.size()),
-            [this](std::error_code err, std::size_t length) {
+            [this, server, conn](std::error_code err, std::size_t length) {
                 if (!err) {
-                    this->AddToIncomingMessageQueue();
+                    this->AddToIncomingMessageQueueFromClient(server, conn);
                 } else {
                     printf("Read body fail\n");
                     this->socket().close();
@@ -198,7 +221,22 @@ private:
         );
     }
 
-    void AddToIncomingMessageQueue() {
+    void ReadBodyFromServer() {
+        // If this function is called then that means the header has already been read and in the request we have a body
+        // The space for that body has already been allocated in the msgTmpIn object
+        asio::async_read(this->_socket, asio::buffer(this->msgTmpIn.body.data(), this->msgTmpIn.body.size()),
+            [this](std::error_code err, std::size_t length) {
+                if (!err) {
+                    this->AddToIncomingMessageQueueFromServer();
+                } else {
+                    printf("Read body fail\n");
+                    this->socket().close();
+                }
+            }
+        );
+    }
+
+        void AddToIncomingMessageQueueFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
         // If it is a server, throw it into the queue as a "owned message"
         if (this->ownerType == owner::server) {
             this->qMessagesIn.push_back({ this->shared_from_this(), this->msgTmpIn });
@@ -207,6 +245,20 @@ private:
         }
 
         this->msgTmpIn.clear();
-        this->ReadHeader();
+
+        this->ReadHeaderFromClient(server, conn);
+    }
+
+    void AddToIncomingMessageQueueFromServer() {
+        // If it is a server, throw it into the queue as a "owned message"
+        if (this->ownerType == owner::server) {
+            this->qMessagesIn.push_back({ this->shared_from_this(), this->msgTmpIn });
+        } else {
+            this->qMessagesIn.push_back({ nullptr, this->msgTmpIn });
+        }
+
+        this->msgTmpIn.clear();
+
+        this->ReadHeaderFromServer();
     }
 };
