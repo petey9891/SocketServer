@@ -88,7 +88,7 @@ public:
         asio::async_connect(this->m_connection->socket(), endpoints,
             [this, endpoints](std::error_code err, asio::ip::tcp::endpoint endpoint) {
                 if (!err) {
-                    this->m_connection->ssl_socket().async_handshake(asio::ssl::stream_base::client,
+                    this->m_connection->ssl_socket_stream().async_handshake(asio::ssl::stream_base::client,
                         [this](std::error_code hErr) {
                             printf("[CLIENT] Connected to server\n");
                             if (!hErr) {
