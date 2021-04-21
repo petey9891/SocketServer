@@ -48,7 +48,7 @@ public:
     virtual ~SocketConnection() {}
 
 public:
-    ssl_socket& ssl_socket() {
+    ssl_socket& ssl_socket_stream() {
         return this->_socket;
     }
 

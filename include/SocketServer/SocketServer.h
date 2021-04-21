@@ -89,7 +89,7 @@ public:
     };
 
     void ConnectToClient(std::shared_ptr<SocketConnection<T>> conn) {
-         conn->ssl_socket().async_handshake(asio::ssl::stream_base::server,
+         conn->ssl_socket_stream().async_handshake(asio::ssl::stream_base::server,
             [this, conn](const std::error_code err) {
                 if (!err) {
                     printf("[SERVER] Connection approved\n");
