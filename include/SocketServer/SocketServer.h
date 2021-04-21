@@ -63,6 +63,7 @@ public:
 
     // ASYNC    
     void WaitForConnection() {
+        std::cout << "Waiting for connectin..." << std::endl;
         std::shared_ptr<SocketConnection<T>> conn = std::make_shared<SocketConnection<T>>(SocketConnection<T>::owner::server, this->io_context, this->ssl_context, this->qMessagesIn);
         this->acceptor.async_accept(conn->socket(),
             [this, conn](std::error_code err) {
@@ -92,10 +93,10 @@ public:
          conn->ssl_socket_stream().async_handshake(asio::ssl::stream_base::server,
             [this, conn](const std::error_code err) {
                 if (!err) {
-                    printf("[SERVER] Connection approved\n");
+                    std::cout << "[SERVER] Connection approved" << endl;
                     conn->ReadHeaderFromClient(this, conn);
                 } else {
-                    printf("[SERVER] Handshake Error: %s\n", err.message().c_str());
+                    std::cout << "[SERVER] Handshake Error: " << err.message() << std::endl;
                 }
             }
         );
