@@ -10,7 +10,9 @@ private:
     bool power = false;
 
 public:
-    Cube(std::string cert, std::string key, std::string ca): SocketClient(cert, key, ca) {}
+    Cube(const std::string& host, const uint16_t port, std::string cert, std::string key, std::string ca)
+        : SocketClient(host, port, cert, key, ca)
+    {}
 
     void OnMessageRecieved(Message<MessageType>& msg) override {
         switch (msg.header.id) {
@@ -46,9 +48,9 @@ public:
 };
 
 int main(void) {
-    Cube cube(clientCertPath, clientKeyPath, caPath);
+    Cube cube(host, port, clientCertPath, clientKeyPath, caPath);
 
-    cube.Connect(host, port);
+    cube.Connect();
 
     printf("[CUBE] Connected\n");
     while (true) {

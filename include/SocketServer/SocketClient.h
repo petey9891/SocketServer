@@ -18,20 +18,26 @@ protected:
 
 private:
     tsqueue<OwnedMessage<T>> qMessagesIn;
+
+    std::string host;
+    uint16_t port;
+
     std::string certPath;
     std::string keyPath;
     std::string caPath;
 
 public:
-    SocketClient(std::string certPath, std::string keyPath, std::string caPath): certPath(certPath), keyPath(keyPath), caPath(caPath) {};
+    SocketClient(const std::string& host, const uint16_t port, std::string certPath, std::string keyPath, std::string caPath)
+        : host(host), port(port), certPath(certPath), keyPath(keyPath), caPath(caPath) 
+    {};
+    
     virtual ~SocketClient() {
         this->Disconnect();
     }
 
 public:
-
     // Connect to the server
-    bool Connect(const std::string& host, const uint16_t port) {
+    bool Connect() {
         try {
 			tcp::resolver resolver(this->io_context);
 			tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));

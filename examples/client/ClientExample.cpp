@@ -7,7 +7,9 @@
 
 class Client: public SocketClient<MessageType> {
 public:
-    Client(std::string cert, std::string key, std::string ca): SocketClient(cert, key, ca) {}
+    Client(const std::string& host, const uint16_t port, std::string cert, std::string key, std::string ca)
+        : SocketClient(host, port, cert, key, ca) 
+    {}
 
     void OnOff() {
         Message<MessageType> message;
@@ -55,9 +57,9 @@ public:
 };
 
 int main(void) {
-    Client client(clientCertPath, clientKeyPath, caPath);
+    Client client(host, port, clientCertPath, clientKeyPath, caPath);
 
-    client.Connect(host, port);
+    client.Connect();
 
     printf("Commands:\n\n1)\tOn/Off\n2)\tBrightness <value>\n3)\tPulse\n4)\tRehoboam\n5)\tPing\n6)\tShutdown\n");
 
