@@ -11,29 +11,11 @@ using asio::ip::tcp;
 
 template<typename T>
 class SocketServer {
-protected:
-    // Thread safe queue for incoming messages
-    tsqueue<OwnedMessage<T> > qMessagesIn;
-
-    // Container of active validated connections
-    std::deque<std::shared_ptr<SocketConnection<T>>> deqConnections;   
-
-    asio::io_context io_context;
-    asio::ip::tcp::acceptor acceptor;
-    asio::ssl::context ssl_context;
-
-    std::thread server_thread;
-    std::thread request_thread;
-
-private:
-    std::string certPath;
-    std::string keyPath;
-    std::string caPath;
-
 public:
     // Create the server and listen to the desired port
     SocketServer(uint16_t port, std::string certPath, std::string keyPath, std::string caPath)
-        : acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)), ssl_context(asio::ssl::context::sslv23), certPath(certPath), keyPath(keyPath), caPath(caPath)
+        : acceptor(io_context, tcp::endpoint(tcp::v4(), port)), ssl_context(asio::ssl::context::sslv23), 
+          certPath(certPath), keyPath(keyPath), caPath(caPath)
     {
         this->ssl_context.set_options(
             asio::ssl::context::default_workarounds 
@@ -89,12 +71,9 @@ public:
                     // Display some useful(?) information
                     std::cout << "[SERVER] New Connection: " << conn->socket().remote_endpoint() << "\n";
 
-                    if (this->OnClientConnect(conn)) {
-                        std::cout << "[SERVER] Connection approved" << std::endl;
-                        
+                    if (this->OnClientConnect(conn)) {                
                         this->deqConnections.push_back(std::move(conn));
-                                     
-                        this->deqConnections.back()->ConnectToClient(this, conn);
+                        this->ConnectToClient(conn);
                     } else {
                         std::cout << "[SERVER] Connection denied from: " << conn->socket().remote_endpoint() << "\n";
                     }
@@ -108,6 +87,19 @@ public:
                 this->WaitForConnection();
         });
     };
+
+    void ConnectToClient(std::shared_ptr<SocketConnection<T>> conn) {
+         conn->ssl_socket().async_handshake(asio::ssl::stream_base::server,
+            [this, conn](const std::error_code err) {
+                if (!err) {
+                    printf("[SERVER] Connection approved\n");
+                    conn->ReadHeaderFromClient(this, conn);
+                } else {
+                    printf("[SERVER] Handshake Error: %s\n", err.message().c_str());
+                }
+            }
+        );
+    }
 
     void MessageClient(std::shared_ptr<SocketConnection<T>> client, const Message<T>& msg) {
         if (client && client->IsConnected()) {
@@ -179,4 +171,23 @@ protected:
     virtual void OnClientValidated() {
 
     }
+
+protected:
+    // Thread safe queue for incoming messages
+    tsqueue<OwnedMessage<T> > qMessagesIn;
+
+    // Container of active validated connections
+    std::deque<std::shared_ptr<SocketConnection<T>>> deqConnections;   
+
+private:
+    asio::io_context io_context;
+    asio::ip::tcp::acceptor acceptor;
+    asio::ssl::context ssl_context;
+
+    std::thread server_thread;
+    std::thread request_thread;
+
+    std::string certPath;
+    std::string keyPath;
+    std::string caPath;
 };

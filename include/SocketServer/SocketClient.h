@@ -26,46 +26,98 @@ private:
     std::string keyPath;
     std::string caPath;
 
+    asio::ssl::context ssl_context;
+
+    asio::steady_timer m_timer { this->io_context, asio::chrono::seconds(2) };
+
+    int reconnect_count { 0 };
+
 public:
     SocketClient(const std::string& host, const uint16_t port, std::string certPath, std::string keyPath, std::string caPath)
-        : host(host), port(port), certPath(certPath), keyPath(keyPath), caPath(caPath) 
-    {};
+        : host(host), port(port), certPath(certPath), keyPath(keyPath), caPath(caPath), ssl_context(asio::ssl::context::sslv23)
+    {
+        this->Initialize();
+    };
     
     virtual ~SocketClient() {
         this->Disconnect();
     }
 
 public:
-    // Connect to the server
-    bool Connect() {
-        try {
-			tcp::resolver resolver(this->io_context);
-			tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
 
-            asio::ssl::context ssl_context(asio::ssl::context::sslv23);
-
-            ssl_context.set_options(
+    void Initialize() {
+            this->ssl_context.set_options(
                 asio::ssl::context::default_workarounds 
                 | asio::ssl::context::no_sslv2
                 | asio::ssl::context::single_dh_use);
 
-            ssl_context.set_verify_mode(asio::ssl::verify_peer | asio::ssl::verify_fail_if_no_peer_cert);
-            ssl_context.load_verify_file(this->caPath);
+            this->ssl_context.set_verify_mode(asio::ssl::verify_peer | asio::ssl::verify_fail_if_no_peer_cert);
+            this->ssl_context.load_verify_file(this->caPath);
 
-            ssl_context.use_certificate_file(this->certPath, asio::ssl::context::pem);
-            ssl_context.use_private_key_file(this->keyPath, asio::ssl::context::pem);
+            this->ssl_context.use_certificate_file(this->certPath, asio::ssl::context::pem);
+            this->ssl_context.use_private_key_file(this->keyPath, asio::ssl::context::pem);
+    }
+
+    // Connect to the server
+    void Connect() {
+        this->thread_context = std::thread([this]() {
+            this->AttemptConnection();
+            this->io_context.run();
+        });
+    }
+
+    void AttemptConnection() {
+        try {
+			tcp::resolver resolver(this->io_context);
+			tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
+
+            if (this->reconnect_count % 5 == 0) {
+                printf("[CLIENT] Connecting... #%d\n", this->reconnect_count);
+            }
+            this->reconnect_count++;
 
             this->m_connection = std::make_unique<SocketConnection<T>>(SocketConnection<T>::owner::client, this->io_context, ssl_context, this->qMessagesIn);           
 
-            this->m_connection->ConnectToServer(endpoints);
-
-            this->thread_context = std::thread([this]() { this->io_context.run(); });
+            this->ConnectToServer(endpoints);
         } catch (std::exception& e) {
-            fprintf(stderr, "Client exception: %s\n", e.what());
-            return false;
+            fprintf(stderr, "[CLIENT] Client exception: %s\n", e.what());
         }
+    }
 
-        return true;
+    void ConnectToServer(const asio::ip::tcp::resolver::results_type& endpoints) {
+        asio::async_connect(this->m_connection->socket(), endpoints,
+            [this, endpoints](std::error_code err, asio::ip::tcp::endpoint endpoint) {
+                if (!err) {
+                    this->m_connection->ssl_socket().async_handshake(asio::ssl::stream_base::client,
+                        [this](std::error_code hErr) {
+                            printf("[CLIENT] Connected to server\n");
+                            if (!hErr) {
+                                this->m_connection->ReadHeaderFromServer();
+                            } else {
+                                printf("[CLIENT] Handshake Error: %s\n", hErr.message().c_str());
+                                this->Reconnect();
+                            }
+                        }
+                    );
+                }  else {
+                    this->Reconnect();
+                }
+            }
+        );
+    }
+
+    void Reconnect() {
+        this->m_connection->socket().close();
+        this->m_connection.reset();
+
+        this->m_timer.expires_from_now(asio::chrono::seconds(1));
+        this->m_timer.async_wait([this](const std::error_code& err) {
+            if (!err) {
+                this->AttemptConnection();
+            } else {
+                printf("[CLIENT] Reconnection error: %s\n", err.message().c_str());
+            }
+        });
     }
 
     // Disconnect from the server

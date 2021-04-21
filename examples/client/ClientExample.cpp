@@ -6,9 +6,11 @@
 #include "../config.h"
 
 class Client: public SocketClient<MessageType> {
+private:
+
 public:
     Client(const std::string& host, const uint16_t port, std::string cert, std::string key, std::string ca)
-        : SocketClient(host, port, cert, key, ca) 
+        : SocketClient(host, port, cert, key, ca)
     {}
 
     void OnOff() {
@@ -66,7 +68,8 @@ int main(void) {
     uint8_t input;
 
     bool waitingForAck = false;
-    while (client.IsConnected()) {
+    // while (client.IsConnected()) {
+    while (true) {
         printf("\n>>> ");
         std::cin >> input;
 

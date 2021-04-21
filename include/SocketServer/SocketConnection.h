@@ -22,6 +22,7 @@ public:
 protected:
     // This context is shared with the whole asio instance
     asio::io_context& asioContext;
+    asio::ssl::context& ssl_context;
 
     // Each SocketConnection has a unique socket to a remote 
     ssl_socket _socket;
@@ -39,7 +40,7 @@ protected:
 
 public:
     SocketConnection(owner parent, asio::io_context& asioContext, asio::ssl::context& ssl_context, tsqueue<OwnedMessage<T>>& qIn)
-        : asioContext(asioContext), _socket(asioContext, ssl_context), qMessagesIn(qIn)
+        : asioContext(asioContext), ssl_context(ssl_context), _socket(asioContext, ssl_context), qMessagesIn(qIn)
     {
         this->ownerType = parent;
     }
@@ -47,46 +48,12 @@ public:
     virtual ~SocketConnection() {}
 
 public:
+    ssl_socket& ssl_socket() {
+        return this->_socket;
+    }
+
     ssl_socket::lowest_layer_type& socket() {
         return this->_socket.lowest_layer();
-    }
-
-    void ConnectToClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
-        // Only servers can connect to clients
-        if (this->ownerType == owner::server) {
-            this->_socket.async_handshake(asio::ssl::stream_base::server,
-                [this, server, conn](const std::error_code err) {
-                    if (!err) {
-                        this->ReadHeaderFromClient(server, conn);
-                    } else {
-                        printf("[SERVER] Handshake Error: %s\n", err.message().c_str());
-                    }
-                }
-            );
-        }
-    }
-
-    void ConnectToServer(const asio::ip::tcp::resolver::results_type& endpoints) {
-        // Only clients can connect to a server
-        if (this->ownerType == owner::client) {
-            asio::async_connect(this->socket(), endpoints,
-                [this](std::error_code err, asio::ip::tcp::endpoint endpoint) {
-                    if (!err) {
-                        this->_socket.async_handshake(asio::ssl::stream_base::client,
-                            [this](std::error_code hErr) {
-                                if (!hErr) {
-                                    this->ReadHeaderFromServer();
-                                } else {
-                                    printf("[CLIENT] Handshake Error: %s\n", hErr.message().c_str());
-                                }
-                            }
-                        );
-                    }  else {
-                        printf("[CLIENT] SocketConnection Error: %s\n", err.message().c_str());
-                    }
-                }
-            );
-        }
     }
 
     void Disconnect() {
@@ -110,6 +77,51 @@ public:
                 this->qMessagesOut.push_back(msg);
                 if (!isWritingMessage) {
                     this->WriteHeader();
+                }
+            }
+        );
+    }
+
+    void ReadHeaderFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
+        asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
+            [this, server, conn](std::error_code err, std::size_t length) {
+                if (!err) {
+                    // Check if the header just read also has a body
+                    if (this->msgTmpIn.header.size > 0) {
+                        // It would be nice to know what else was sent...
+                        this->msgTmpIn.body.resize(this->msgTmpIn.header.size);
+                        
+                        this->ReadBodyFromClient(server, conn);
+                    } else {
+                        this->AddToIncomingMessageQueueFromClient(server, conn);
+                    }
+                } else {
+                    this->socket().close(); 
+                    server->removeConnection(conn);
+                    printf("[SERVER] Disconnected client from server\n");
+
+                }
+            }
+        );
+    }
+
+        // ASYNC - Prime context ready to read a message header
+    void ReadHeaderFromServer() {
+        asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
+            [this](std::error_code err, std::size_t length) {
+                if (!err) {
+                    // Check if the header just read also has a body
+                    if (this->msgTmpIn.header.size > 0) {
+                        // It would be nice to know what else was sent...
+                        this->msgTmpIn.body.resize(this->msgTmpIn.header.size);
+                        
+                        this->ReadBodyFromServer();
+                    } else {
+                        this->AddToIncomingMessageQueueFromServer();
+                    }
+                } else {
+                    this->socket().close(); 
+                    printf("[CLIENT] Disconnected from server\n");
                 }
             }
         );
@@ -155,51 +167,6 @@ private:
                 } else {
                     printf("Write header fail\n");
                     this->socket().close();
-                }
-            }
-        );
-    }
-
-    void ReadHeaderFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
-        asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
-            [this, server, conn](std::error_code err, std::size_t length) {
-                if (!err) {
-                    // Check if the header just read also has a body
-                    if (this->msgTmpIn.header.size > 0) {
-                        // It would be nice to know what else was sent...
-                        this->msgTmpIn.body.resize(this->msgTmpIn.header.size);
-                        
-                        this->ReadBodyFromClient(server, conn);
-                    } else {
-                        this->AddToIncomingMessageQueueFromClient(server, conn);
-                    }
-                } else {
-                    this->socket().close(); 
-                    server->removeConnection(conn);
-                    printf("[SERVER] Disconnected client from server\n");
-
-                }
-            }
-        );
-    }
-
-    // ASYNC - Prime context ready to read a message header
-    void ReadHeaderFromServer() {
-        asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
-            [this](std::error_code err, std::size_t length) {
-                if (!err) {
-                    // Check if the header just read also has a body
-                    if (this->msgTmpIn.header.size > 0) {
-                        // It would be nice to know what else was sent...
-                        this->msgTmpIn.body.resize(this->msgTmpIn.header.size);
-                        
-                        this->ReadBodyFromServer();
-                    } else {
-                        this->AddToIncomingMessageQueueFromServer();
-                    }
-                } else {
-                    this->socket().close(); 
-                    printf("[CLIENT] Disconnected from server\n");
                 }
             }
         );
