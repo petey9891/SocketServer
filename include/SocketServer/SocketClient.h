@@ -30,8 +30,6 @@ private:
 
     asio::steady_timer m_timer { this->io_context, asio::chrono::seconds(2) };
 
-    int reconnect_count { 0 };
-
 public:
     SocketClient(const std::string& host, const uint16_t port, std::string certPath, std::string keyPath, std::string caPath)
         : host(host), port(port), certPath(certPath), keyPath(keyPath), caPath(caPath), ssl_context(asio::ssl::context::sslv23)
@@ -71,11 +69,6 @@ public:
 			tcp::resolver resolver(this->io_context);
 			tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
 
-            if (this->reconnect_count % 5 == 0) {
-                printf("[CLIENT] Connecting... #%d\n", this->reconnect_count);
-            }
-            this->reconnect_count++;
-
             this->m_connection = std::make_unique<SocketConnection<T>>(SocketConnection<T>::owner::client, this->io_context, ssl_context, this->qMessagesIn);           
 
             this->ConnectToServer(endpoints);
@@ -110,7 +103,7 @@ public:
         this->m_connection->socket().close();
         this->m_connection.reset();
 
-        this->m_timer.expires_from_now(asio::chrono::seconds(1));
+        this->m_timer.expires_from_now(asio::chrono::seconds(2));
         this->m_timer.async_wait([this](const std::error_code& err) {
             if (!err) {
                 this->AttemptConnection();

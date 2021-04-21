@@ -63,7 +63,6 @@ public:
 
     // ASYNC    
     void WaitForConnection() {
-        std::cout << "Waiting for connectin..." << std::endl;
         std::shared_ptr<SocketConnection<T>> conn = std::make_shared<SocketConnection<T>>(SocketConnection<T>::owner::server, this->io_context, this->ssl_context, this->qMessagesIn);
         this->acceptor.async_accept(conn->socket(),
             [this, conn](std::error_code err) {
