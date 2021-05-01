@@ -68,9 +68,8 @@ int main(void) {
     uint8_t input;
 
     bool waitingForAck = false;
-    // while (client.IsConnected()) {
     while (true) {
-        printf("\n>>> ");
+        printf("\n\n>>> ");
         std::cin >> input;
 
         if (input == '1') {

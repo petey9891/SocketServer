@@ -4,7 +4,6 @@
 #include <SocketServer/tsqueue.h>
 
 #include <thread>
-#include <iostream>
 #include <deque>
 
 using asio::ip::tcp;
@@ -44,11 +43,11 @@ public:
             // Launch the asio context in its own thread
             this->server_thread = std::thread([this]() { this->io_context.run(); });
         } catch (std::exception& e) {
-            fprintf(stderr, "[SERVER] Exception %s\n", e.what());
+            LOG("Exception", e.what());
             return false;
         }
 
-        std::cout << "[SERVER] Started" << std::endl;
+        LOG("Started");
         return true;
     };
 
@@ -58,7 +57,7 @@ public:
         if (this->server_thread.joinable()) this->server_thread.join();
         if (this->request_thread.joinable()) this->request_thread.join();
 
-        std::cout << "[SERVER] Stopped" << std::endl;
+        LOG("Stopped");
     }
 
     // ASYNC    
@@ -69,19 +68,19 @@ public:
                 // Triggered by incoming SocketConnection request
                 if (!err) {
                     // Display some useful(?) information
-                    std::cout << "[SERVER] New Connection: " << conn->socket().remote_endpoint() << "\n";
+                    LOG("New Connection", conn->socket().remote_endpoint());
 
                     if (this->OnClientConnect(conn)) {                
                         this->deqConnections.push_back(std::move(conn));
                         this->ConnectToClient(conn);
                     } else {
-                        std::cout << "[SERVER] Connection denied from: " << conn->socket().remote_endpoint() << "\n";
+                        LOG("Connection denied", conn->socket().remote_endpoint());
+                        conn->socket().close();
                     }
                 }
                 else {
-                    std::cout << "[SERVER] New Connection Error: " << err.message() << std::endl;
+                    LOG("New Connection Error",  conn->socket().remote_endpoint(), err.message());
                 }
-
                 // Prime the asio context with more work - again simply wait for
                 // another SocketConnection...
                 this->WaitForConnection();
@@ -92,10 +91,10 @@ public:
          conn->ssl_socket_stream().async_handshake(asio::ssl::stream_base::server,
             [this, conn](const std::error_code err) {
                 if (!err) {
-                    std::cout << "[SERVER] Connection approved" << std::endl;
+                    LOG("Connection approved", conn->socket().remote_endpoint());
                     conn->ReadHeaderFromClient(this, conn);
                 } else {
-                    std::cout << "[SERVER] Handshake Error: " << err.message() << std::endl;
+                    LOG("Handshake error", conn->socket().remote_endpoint(), err.message());
                 }
             }
         );

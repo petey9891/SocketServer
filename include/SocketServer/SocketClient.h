@@ -73,7 +73,7 @@ public:
 
             this->ConnectToServer(endpoints);
         } catch (std::exception& e) {
-            fprintf(stderr, "[CLIENT] Client exception: %s\n", e.what());
+            LOG("Exception", e.what());
         }
     }
 
@@ -83,16 +83,16 @@ public:
                 if (!err) {
                     this->m_connection->ssl_socket_stream().async_handshake(asio::ssl::stream_base::client,
                         [this](std::error_code hErr) {
-                            printf("[CLIENT] Connected to server\n");
+                            LOG("Connected to server");
                             if (!hErr) {
                                 this->m_connection->ReadHeaderFromServer();
                             } else {
-                                printf("[CLIENT] Handshake Error: %s\n", hErr.message().c_str());
+                                LOG("Handshake Error", hErr.message());
                                 this->Reconnect();
                             }
                         }
                     );
-                }  else {
+                } else {
                     this->Reconnect();
                 }
             }
@@ -108,7 +108,7 @@ public:
             if (!err) {
                 this->AttemptConnection();
             } else {
-                printf("[CLIENT] Reconnection error: %s\n", err.message().c_str());
+                LOG("Reconnection error", err.message());
             }
         });
     }

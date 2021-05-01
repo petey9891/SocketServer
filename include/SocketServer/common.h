@@ -17,6 +17,8 @@
 #include <memory>
 #include <vector>
 
+#include "logging.h"
+
 enum MessageType: uint32_t {
     Success,
 
@@ -107,4 +109,3 @@ struct OwnedMessage
     std::shared_ptr<SocketConnection<T>> remote = nullptr;
     Message<T> message;
 };
-

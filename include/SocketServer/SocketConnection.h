@@ -96,10 +96,9 @@ public:
                         this->AddToIncomingMessageQueueFromClient(server, conn);
                     }
                 } else {
+                    LOG("Disconnected from client", this->socket().remote_endpoint());
                     this->socket().close(); 
                     server->removeConnection(conn);
-                    printf("[SERVER] Disconnected client from server\n");
-
                 }
             }
         );
@@ -120,8 +119,8 @@ public:
                         this->AddToIncomingMessageQueueFromServer();
                     }
                 } else {
+                    LOG("Disconnected from server");
                     this->socket().close(); 
-                    printf("[CLIENT] Disconnected from server\n");
                 }
             }
         );
@@ -146,7 +145,7 @@ private:
                         }
                     }
                 } else {
-                    printf("Write header fail %s\n", err.message().c_str());
+                    LOG("Write header fail -- closing socket", this->socket().remote_endpoint(), err.message());
                     this->socket().close();
                 }
             }
@@ -165,7 +164,7 @@ private:
                         this->WriteHeader();
                     }
                 } else {
-                    printf("Write header fail\n");
+                    LOG("Write body fail -- closing socket", this->socket().remote_endpoint(), err.message());
                     this->socket().close();
                 }
             }
@@ -181,7 +180,7 @@ private:
                 if (!err) {
                     this->AddToIncomingMessageQueueFromClient(server, conn);
                 } else {
-                    printf("Read body fail\n");
+                    LOG("Read body fail -- closing socket to client", this->socket().remote_endpoint(), err.message());
                     this->socket().close();
                 }
             }
@@ -196,7 +195,7 @@ private:
                 if (!err) {
                     this->AddToIncomingMessageQueueFromServer();
                 } else {
-                    printf("Read body fail\n");
+                    LOG("Read body fail -- closing socket to server", err.message());
                     this->socket().close();
                 }
             }
