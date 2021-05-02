@@ -68,8 +68,7 @@ public:
                 // Triggered by incoming SocketConnection request
                 if (!err) {
                     // Display some useful(?) information
-                    // LOG("New Connection", conn->socket().remote_endpoint());
-                    std::cout << "New connection" <<  conn->socket().remote_endpoint() << std::endl;
+                    LOG("New Connection", conn->socket().remote_endpoint());
 
                     if (this->OnClientConnect(conn)) {                
                         this->deqConnections.push_back(std::move(conn));
