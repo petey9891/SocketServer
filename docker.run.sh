@@ -7,4 +7,4 @@ docker rmi server-relay
 docker build -t server-relay .
 
 # run it
-docker run -p 60000:60000 --name server-relay -d server-relay
+docker run -p 60000:60000 --network=rehoboam --name server-relay -d server-relay
