@@ -16,7 +16,7 @@ std::string inline ClientTypeToString(ClientType type) {
     }
 }
 
-std::string timestamp() {
+std::string inline timestamp() {
     std::time_t now= std::time(0);
     std::tm* now_tm= std::gmtime(&now);
     char buffer[42];
