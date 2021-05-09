@@ -97,7 +97,7 @@ public:
                     }
                 } else {
                     LOG("Disconnected from client", this->socket().remote_endpoint());
-                    this->socket().close(); 
+                    this->Disconnect();
                     server->removeConnection(conn);
                 }
             }
@@ -120,7 +120,7 @@ public:
                     }
                 } else {
                     LOG("Disconnected from server");
-                    this->socket().close(); 
+                    this->Disconnect();
                 }
             }
         );
@@ -146,7 +146,7 @@ private:
                     }
                 } else {
                     LOG("Write header fail -- closing socket", this->socket().remote_endpoint(), err.message());
-                    this->socket().close();
+                    this->Disconnect();
                 }
             }
         );
@@ -165,7 +165,7 @@ private:
                     }
                 } else {
                     LOG("Write body fail -- closing socket", this->socket().remote_endpoint(), err.message());
-                    this->socket().close();
+                    this->Disconnect();
                 }
             }
         );
@@ -181,7 +181,7 @@ private:
                     this->AddToIncomingMessageQueueFromClient(server, conn);
                 } else {
                     LOG("Read body fail -- closing socket to client", this->socket().remote_endpoint(), err.message());
-                    this->socket().close();
+                    this->Disconnect();
                 }
             }
         );
@@ -196,7 +196,7 @@ private:
                     this->AddToIncomingMessageQueueFromServer();
                 } else {
                     LOG("Read body fail -- closing socket to server", err.message());
-                    this->socket().close();
+                    this->Disconnect();
                 }
             }
         );
