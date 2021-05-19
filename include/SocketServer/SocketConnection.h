@@ -58,7 +58,7 @@ public:
 
     void Disconnect() {
         if (this->IsConnected()) {
-            asio::post(this->asioContext, [this]() { this->socket().close(); });
+            this->socket().close();
         }
     }
 
