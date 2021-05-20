@@ -75,7 +75,7 @@ public:
                         this->ConnectToClient(conn);
                     } else {
                         LOG("Connection denied", conn->socket().remote_endpoint());
-                        conn->socket().close();
+                        conn->Disconnect();
                     }
                 }
                 else {
