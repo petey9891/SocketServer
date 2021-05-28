@@ -73,7 +73,7 @@ public:
 
             this->ConnectToServer(endpoints);
         } catch (std::exception& e) {
-            LOG("Exception", e.what());
+            LOG(ERROR, "Exception", e.what());
         }
     }
 
@@ -83,11 +83,11 @@ public:
                 if (!err) {
                     this->m_connection->ssl_socket_stream().async_handshake(asio::ssl::stream_base::client,
                         [this](std::error_code hErr) {
-                            LOG("Connected to server");
+                            LOG(INFO, "Connected to server");
                             if (!hErr) {
                                 this->m_connection->ReadHeaderFromServer();
                             } else {
-                                LOG("Handshake Error", hErr.message());
+                                LOG(INFO, "Handshake Error", hErr.message());
                                 this->Reconnect();
                             }
                         }
@@ -108,7 +108,7 @@ public:
             if (!err) {
                 this->AttemptConnection();
             } else {
-                LOG("Reconnection error", err.message());
+                LOG(INFO, "Reconnection error", err.message());
             }
         });
     }

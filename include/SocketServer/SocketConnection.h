@@ -57,22 +57,28 @@ public:
     }
 
     void Disconnect() {
+        LOG(DEBUG, "Checking if client is still connected before closing the socket");
         if (this->IsConnected()) {
+            LOG(DEBUG, "The client is still connected... closing the socket");
             this->socket().close();
         }
     }
 
-    bool IsConnected() const {
-        // Can't call this->socket() here
-        return this->_socket.lowest_layer().is_open();
+    bool IsConnected() {
+        return this->socket().is_open();
     }
+
+    // bool IsConnected() const {
+    //     // Can't call this->socket() here
+    //     // return this->socket().is_open();
+    //     return this->_socket.lowest_layer().is_open();
+    // }
 
 public:
     // ASYNC - Send a message
     void Send(const Message<T>& msg) {
         asio::post(this->asioContext, 
             [this, msg]() {
-                
                 bool isWritingMessage = !this->qMessagesOut.empty();
                 this->qMessagesOut.push_back(msg);
                 if (!isWritingMessage) {
@@ -96,9 +102,11 @@ public:
                         this->AddToIncomingMessageQueueFromClient(server, conn);
                     }
                 } else {
-                    LOG("Disconnected from client", this->socket().remote_endpoint());
+                    LOG(INFO, "Disconnected from client", this->socket().remote_endpoint());
                     this->Disconnect();
+                    LOG(DEBUG, "Client has been disconnected");
                     server->removeConnection(conn);
+                    LOG(ERROR, "Client connection has been removed from store");
                 }
             }
         );
@@ -119,8 +127,9 @@ public:
                         this->AddToIncomingMessageQueueFromServer();
                     }
                 } else {
-                    LOG("Disconnected from server");
+                    LOG(INFO, "Disconnected from server");
                     this->Disconnect();
+                    LOG(DEBUG, "Client has been disconnected");
                 }
             }
         );
@@ -145,8 +154,9 @@ private:
                         }
                     }
                 } else {
-                    LOG("Write header fail -- closing socket", this->socket().remote_endpoint(), err.message());
+                    LOG(ERROR, "Write header fail -- closing socket", this->socket().remote_endpoint(), err.message());
                     this->Disconnect();
+                    LOG(DEBUG, "Client has been disconnected");
                 }
             }
         );
@@ -164,8 +174,9 @@ private:
                         this->WriteHeader();
                     }
                 } else {
-                    LOG("Write body fail -- closing socket", this->socket().remote_endpoint(), err.message());
+                    LOG(ERROR, "Write body fail -- closing socket", this->socket().remote_endpoint(), err.message());
                     this->Disconnect();
+                    LOG(DEBUG, "Client has been disconnected");
                 }
             }
         );
@@ -180,8 +191,9 @@ private:
                 if (!err) {
                     this->AddToIncomingMessageQueueFromClient(server, conn);
                 } else {
-                    LOG("Read body fail -- closing socket to client", this->socket().remote_endpoint(), err.message());
+                    LOG(ERROR, "Read body fail -- closing socket to client", this->socket().remote_endpoint(), err.message());
                     this->Disconnect();
+                    LOG(DEBUG, "Client has been disconnected");
                 }
             }
         );
@@ -195,8 +207,9 @@ private:
                 if (!err) {
                     this->AddToIncomingMessageQueueFromServer();
                 } else {
-                    LOG("Read body fail -- closing socket to server", err.message());
+                    LOG(ERROR, "Read body fail -- closing socket to server", err.message());
                     this->Disconnect();
+                    LOG(DEBUG, "Client has been disconnected");
                 }
             }
         );

@@ -24,19 +24,73 @@ std::string inline timestamp() {
     return buffer;
 }
 
-void inline LOG(std::string message) {
 
-    std::cout << "[" << timestamp() << "]" << " [SELF] " << message << std::endl;
+
+enum LogLevel {
+    INFO,
+    DEBUG,
+    ERROR
+};
+
+#define CURRENT_LOG_LEVEL DEBUG
+
+bool inline validateLog(LogLevel level) {
+    // adding this logic to lock out logging when level is error
+    // if (CURRENT_LOG_LEVEL == ERROR && level == ERROR) {
+    //     return true;
+    // } else if (CURRENT_LOG_LEVEL == DEBUG && level == DEBUG) {
+    //     return true;
+    // } else if (CURRENT_LOG_LEVEL == INFO)
+
+    if (CURRENT_LOG_LEVEL == DEBUG && level == DEBUG) {
+        return true;
+    }
+    else if (CURRENT_LOG_LEVEL == ERROR && level == ERROR) {
+        return true;
+    } else {
+        if (level == INFO || level == ERROR) {
+            return true;
+        }
+    }
+    // if (level == INFO || level == ERROR || (CURRENT_LOG_LEVEL == DEBUG && level == DEBUG)) {
+    //     return true;
+    // }
+    return false;
 }
 
-void inline LOG(std::string message, std::string data) {
-    std::cout << "[" << timestamp() << "]" << " [SELF] " << message << ": " << data << std::endl;
+std::string inline levelToSring(LogLevel level) {
+    switch (level) {
+        case INFO: 
+            return "INFO";
+        case DEBUG:
+            return "DEBUG";
+        case ERROR:
+            return "ERROR";
+        default:
+            return "INFO"; 
+    }
 }
 
-void inline LOG(std::string message, asio::ip::tcp::endpoint endpoint) {
-    std::cout << "[" << timestamp() << "]" << " [" << endpoint << "] " << message << std::endl;
+void inline LOG(LogLevel level, std::string message) {
+    if (validateLog(level)) {
+        std::cout << "[" << levelToSring(level) << "] " << "[" << timestamp() << "]" <<  " [SELF] " << message << std::endl;
+    }
 }
 
-void inline LOG(std::string message, asio::ip::tcp::endpoint endpoint, std::string data) {
-    std::cout << "[" << timestamp() << "]" << " [" << endpoint << "] " << message << ": " << data << std::endl;
+void inline LOG(LogLevel level, std::string message, std::string data) {
+    if (validateLog(level)) {
+        std::cout << "[" << levelToSring(level) << "] " << "[" << timestamp() << "]" << " [SELF] " << message << ": " << data << std::endl;
+    }
+}
+
+void inline LOG(LogLevel level, std::string message, asio::ip::tcp::endpoint endpoint) {
+    if (validateLog(level)) {
+        std::cout << "[" << levelToSring(level) << "] " << "[" << timestamp() << "]" << " [" << endpoint << "] " << message << std::endl;
+    }
+}
+
+void inline LOG(LogLevel level, std::string message, asio::ip::tcp::endpoint endpoint, std::string data) {
+    if (validateLog(level)) {
+        std::cout << "[" << levelToSring(level) << "] " << "[" << timestamp() << "]" << " [" << endpoint << "] " << message << ": " << data << std::endl;
+    }
 }
