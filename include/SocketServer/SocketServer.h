@@ -82,6 +82,7 @@ public:
                 else {
                     LOG(ERROR, "New Connection Error",  conn->socket().remote_endpoint(), err.message());
                 }
+                LOG(DEBUG, "Waiting for new connection...");
                 // Prime the asio context with more work - again simply wait for
                 // another SocketConnection...
                 this->WaitForConnection();

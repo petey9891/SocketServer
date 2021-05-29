@@ -60,7 +60,11 @@ public:
         LOG(DEBUG, "Checking if client is still connected before closing the socket");
         if (this->IsConnected()) {
             LOG(DEBUG, "The client is still connected... closing the socket");
+            LOG(DEBUG, "The current socket connection is open: %d", this->IsConnected());
+            LOG(DEBUG, "The current _socket.lowest_layer() connection is open: %d", this->_socket.lowest_layer().is_open());
             this->socket().close();
+            LOG(DEBUG, "The socket is now closed");
+
         }
     }
 
@@ -91,6 +95,7 @@ public:
     void ReadHeaderFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
         asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
             [this, server, conn](std::error_code err, std::size_t length) {
+                LOG(DEBUG, "Reading header from client");
                 if (!err) {
                     // Check if the header just read also has a body
                     if (this->msgTmpIn.header.size > 0) {
@@ -106,7 +111,7 @@ public:
                     this->Disconnect();
                     LOG(DEBUG, "Client has been disconnected");
                     server->removeConnection(conn);
-                    LOG(ERROR, "Client connection has been removed from store");
+                    LOG(DEBUG, "Client connection has been removed from store");
                 }
             }
         );
