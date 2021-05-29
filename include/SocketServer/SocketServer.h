@@ -66,6 +66,7 @@ public:
         this->acceptor.async_accept(conn->socket(),
             [this, conn](std::error_code err) {
                 // Triggered by incoming SocketConnection request
+                LOG(DEBUG, "Recieved new connection");
                 if (!err) {
                     // Display some useful(?) information
                     LOG(INFO, "New Connection", conn->socket().remote_endpoint());
@@ -82,7 +83,7 @@ public:
                 else {
                     LOG(ERROR, "New Connection Error",  conn->socket().remote_endpoint(), err.message());
                 }
-                LOG(DEBUG, "Waiting for new connection...");
+                LOG(DEBUG, "Done with new conneciton, Waiting for a new one...");
                 // Prime the asio context with more work - again simply wait for
                 // another SocketConnection...
                 this->WaitForConnection();
