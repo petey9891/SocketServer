@@ -60,8 +60,13 @@ public:
         LOG(DEBUG, "Checking if client is still connected before closing the socket");
         if (this->IsConnected()) {
             LOG(DEBUG, "The client is still connected... closing the socket");
-            LOG(DEBUG, "The current socket connection is open: %d", this->IsConnected());
-            LOG(DEBUG, "The current _socket.lowest_layer() connection is open: %d", this->_socket.lowest_layer().is_open());
+            
+            // Don't judge this code... i'm too lazy to do it better
+            std::string status1 = this->IsConnected() ? "true" : "false";
+            LOG(DEBUG, "The current socket connection is open: %d", status1.c_str());
+
+            std::string status2 = this->_socket.lowest_layer().is_open() ? "true" : "false";
+            LOG(DEBUG, "The current _socket.lowest_layer() connection is open: %d", status2.c_str());
             this->socket().close();
             LOG(DEBUG, "The socket is now closed");
 
