@@ -28,7 +28,8 @@ enum MessageType: uint32_t {
     CubeDisplayOnOff,
     CubeBrightness,
     CubePulse,
-    CubeRehoboam
+    CubeRehoboam,
+    SetSolidColor
 };
 
 template <typename T>

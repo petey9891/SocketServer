@@ -37,6 +37,9 @@ protected:
             case ServerShutdown:
                 this->MessageAllClients(msg, client);
                 break;
+            case SetSolidColor:
+                this->MessageAllClients(msg, client);
+                break;
             case Success:
                 break;
         }
