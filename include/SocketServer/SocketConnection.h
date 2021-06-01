@@ -100,7 +100,6 @@ public:
     void ReadHeaderFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
         asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
             [this, server, conn](std::error_code err, std::size_t length) {
-                LOG(DEBUG, "Reading header from client");
                 if (!err) {
                     // Check if the header just read also has a body
                     if (this->msgTmpIn.header.size > 0) {
