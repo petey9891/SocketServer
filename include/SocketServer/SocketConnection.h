@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SocketServer/common.h>
+#include <stdexcept>
 
 using asio::ip::tcp;
 
@@ -113,7 +114,7 @@ public:
                 } else {
                     LOG(INFO, "Disconnected from client", this->socket().remote_endpoint());
                     this->Disconnect();
-                    LOG(DEBUG, "Client has been disconnected");
+                    
                     server->removeConnection(conn);
                     LOG(DEBUG, "Client connection has been removed from store");
                 }
@@ -121,24 +122,24 @@ public:
         );
     }
 
-        // ASYNC - Prime context ready to read a message header
-    void ReadHeaderFromServer() {
+    // ASYNC - Prime context ready to read a message header
+    template<typename ErrorCompletion>
+    void ReadHeaderFromServer(ErrorCompletion&& handler) {
         asio::async_read(this->_socket, asio::buffer(&this->msgTmpIn.header, sizeof(MessageHeader<T>)),
-            [this](std::error_code err, std::size_t length) {
+            [this, handler](std::error_code err, std::size_t length) {
                 if (!err) {
                     // Check if the header just read also has a body
                     if (this->msgTmpIn.header.size > 0) {
                         // It would be nice to know what else was sent...
                         this->msgTmpIn.body.resize(this->msgTmpIn.header.size);
                         
-                        this->ReadBodyFromServer();
+                        this->ReadBodyFromServer(handler);
                     } else {
-                        this->AddToIncomingMessageQueueFromServer();
+                        this->AddToIncomingMessageQueueFromServer(handler);
                     }
                 } else {
-                    LOG(INFO, "Disconnected from server");
                     this->Disconnect();
-                    LOG(DEBUG, "Client has been disconnected");
+                    handler(std::runtime_error("Unexpectedly disconnected from the server"));
                 }
             }
         );
@@ -165,7 +166,6 @@ private:
                 } else {
                     LOG(ERROR, "Write header fail -- closing socket", this->socket().remote_endpoint(), err.message());
                     this->Disconnect();
-                    LOG(DEBUG, "Client has been disconnected");
                 }
             }
         );
@@ -185,7 +185,6 @@ private:
                 } else {
                     LOG(ERROR, "Write body fail -- closing socket", this->socket().remote_endpoint(), err.message());
                     this->Disconnect();
-                    LOG(DEBUG, "Client has been disconnected");
                 }
             }
         );
@@ -202,29 +201,29 @@ private:
                 } else {
                     LOG(ERROR, "Read body fail -- closing socket to client", this->socket().remote_endpoint(), err.message());
                     this->Disconnect();
-                    LOG(DEBUG, "Client has been disconnected");
                 }
             }
         );
     }
 
-    void ReadBodyFromServer() {
+    template<typename ErrorCompletion>
+    void ReadBodyFromServer(ErrorCompletion&& handler) {
         // If this function is called then that means the header has already been read and in the request we have a body
         // The space for that body has already been allocated in the msgTmpIn object
         asio::async_read(this->_socket, asio::buffer(this->msgTmpIn.body.data(), this->msgTmpIn.body.size()),
-            [this](std::error_code err, std::size_t length) {
+            [this, handler](std::error_code err, std::size_t length) {
                 if (!err) {
-                    this->AddToIncomingMessageQueueFromServer();
+                    this->AddToIncomingMessageQueueFromServer(handler);
                 } else {
                     LOG(ERROR, "Read body fail -- closing socket to server", err.message());
                     this->Disconnect();
-                    LOG(DEBUG, "Client has been disconnected");
+                    handler(std::runtime_error("Disconnected from server after read body fail"));
                 }
             }
         );
     }
 
-        void AddToIncomingMessageQueueFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
+    void AddToIncomingMessageQueueFromClient(SocketServer<T>* server, std::shared_ptr<SocketConnection<T>> conn) {
         // If it is a server, throw it into the queue as a "owned message"
         if (this->ownerType == owner::server) {
             this->qMessagesIn.push_back({ this->shared_from_this(), this->msgTmpIn });
@@ -237,7 +236,8 @@ private:
         this->ReadHeaderFromClient(server, conn);
     }
 
-    void AddToIncomingMessageQueueFromServer() {
+    template<typename ErrorCompletion>
+    void AddToIncomingMessageQueueFromServer(ErrorCompletion&& handler) {
         // If it is a server, throw it into the queue as a "owned message"
         if (this->ownerType == owner::server) {
             this->qMessagesIn.push_back({ this->shared_from_this(), this->msgTmpIn });
@@ -247,6 +247,6 @@ private:
 
         this->msgTmpIn.clear();
 
-        this->ReadHeaderFromServer();
+        this->ReadHeaderFromServer(handler);
     }
 };

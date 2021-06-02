@@ -59,6 +59,8 @@ public:
     // Connect to the server
     void Connect() {
         this->thread_context = std::thread([this]() {
+            LOG(INFO, "Connecting to server");
+            LOG(INFO, "Autoconnect is turned on");
             this->AttemptConnection();
             this->io_context.run();
         });
@@ -85,9 +87,15 @@ public:
                         [this](std::error_code hErr) {
                             LOG(INFO, "Connected to server");
                             if (!hErr) {
-                                this->m_connection->ReadHeaderFromServer();
+                                this->m_connection->ReadHeaderFromServer(
+                                    [this](std::runtime_error rErr) {
+                                        LOG(ERROR, "Connection Error", rErr.what());
+                                        LOG(INFO, "Initiating autoconnect");
+                                        this->Reconnect();
+                                    }
+                                );
                             } else {
-                                LOG(INFO, "Handshake Error", hErr.message());
+                                LOG(ERROR, "Handshake Error", hErr.message());
                                 this->Reconnect();
                             }
                         }
@@ -108,7 +116,7 @@ public:
             if (!err) {
                 this->AttemptConnection();
             } else {
-                LOG(INFO, "Reconnection error", err.message());
+                LOG(ERROR, "Reconnection error", err.message());
             }
         });
     }
