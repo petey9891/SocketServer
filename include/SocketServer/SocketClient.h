@@ -22,17 +22,22 @@ private:
     std::string host;
     uint16_t port;
 
+
     std::string certPath;
     std::string keyPath;
     std::string caPath;
 
+    ClientType clientType;
     asio::ssl::context ssl_context;
 
     asio::steady_timer m_timer { this->io_context, asio::chrono::seconds(2) };
+    asio::steady_timer pulse_timer { this->io_context, asio::chrono::seconds(10) };
+
+    uint8_t errorCount = 0;
 
 public:
-    SocketClient(const std::string& host, const uint16_t port, std::string certPath, std::string keyPath, std::string caPath)
-        : host(host), port(port), certPath(certPath), keyPath(keyPath), caPath(caPath), ssl_context(asio::ssl::context::sslv23)
+    SocketClient(const std::string& host, const uint16_t port, std::string certPath, std::string keyPath, std::string caPath, ClientType type)
+        : host(host), port(port), certPath(certPath), keyPath(keyPath), caPath(caPath), clientType(type), ssl_context(asio::ssl::context::sslv23)
     {
         this->Initialize();
     };
@@ -87,6 +92,12 @@ public:
                         [this](std::error_code hErr) {
                             LOG(INFO, "Connected to server");
                             if (!hErr) {
+
+                                if (this->clientType == CUBE) {
+                                    LOG(INFO, "Initializing heartbeat");
+                                    this->Pulse();
+                                }
+
                                 this->m_connection->ReadHeaderFromServer(
                                     [this](std::runtime_error rErr) {
                                         LOG(ERROR, "Connection Error", rErr.what());
@@ -110,8 +121,9 @@ public:
     void Reconnect() {
         this->m_connection->socket().close();
         this->m_connection.reset();
+        this->pulse_timer.cancel();
 
-        this->m_timer.expires_from_now(asio::chrono::seconds(2));
+        this->m_timer.expires_from_now(asio::chrono::seconds(5));
         this->m_timer.async_wait([this](const std::error_code& err) {
             if (!err) {
                 this->AttemptConnection();
@@ -119,6 +131,22 @@ public:
                 LOG(ERROR, "Reconnection error", err.message());
             }
         });
+    }
+
+    void Pulse() {
+        if (this->IsConnected()) {
+            this->pulse_timer.expires_from_now(asio::chrono::seconds(10));
+            this->pulse_timer.async_wait([this](const std::error_code& err) {
+                if (!err) {
+                    Message<MessageType> message;
+                    message.header.id = ServerPing;
+                    this->m_connection->Send(message);
+                    this->Pulse();
+                } else {
+                    LOG(ERROR, "Heartbeat error:", err.message());
+                }
+            });
+        }
     }
 
     // Disconnect from the server

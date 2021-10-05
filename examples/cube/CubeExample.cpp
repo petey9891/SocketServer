@@ -11,12 +11,13 @@ private:
 
 public:
     Cube(const std::string& host, const uint16_t port, std::string cert, std::string key, std::string ca)
-        : SocketClient(host, port, cert, key, ca)
+        : SocketClient(host, port, cert, key, ca, CUBE)
     {}
 
     void OnMessageRecieved(Message<MessageType>& msg) override {
         switch (msg.header.id) {
             case ServerPing:
+                printf("Heartbeat has been acknowledge\n");
                 break;
             case CubeDisplayOnOff:
                 if (!power) {
@@ -39,7 +40,11 @@ public:
                 printf("The cube is rehoboaming\n");
                 break;
             case ServerShutdown:
+                this->Disconnect();
                 printf("The cube is shutting down\n");
+                break;
+            case SetSolidColor:
+                printf("Setting the solid color\n");
                 break;
             case Success:
                 break;

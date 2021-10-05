@@ -47,6 +47,9 @@ protected:
                 // this->Acknowledge(client);
                 this->MessageAllClients(msg, client);
                 break;
+            case SetSolidColor:
+                this->MessageAllClients(msg, client);
+                break;
             case Success:
                 break;
         }

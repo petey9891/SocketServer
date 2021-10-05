@@ -64,10 +64,10 @@ public:
             
             // Don't judge this code... i'm too lazy to do it better
             std::string status1 = this->IsConnected() ? "true" : "false";
-            LOG(DEBUG, "The current socket connection is open: %d", status1.c_str());
+            LOG(DEBUG, "The current socket connection is open", status1.c_str());
 
             std::string status2 = this->_socket.lowest_layer().is_open() ? "true" : "false";
-            LOG(DEBUG, "The current _socket.lowest_layer() connection is open: %d", status2.c_str());
+            LOG(DEBUG, "The current _socket.lowest_layer() connection is open", status2.c_str());
             this->socket().close();
             LOG(DEBUG, "The socket is now closed");
 

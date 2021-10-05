@@ -10,7 +10,7 @@ private:
 
 public:
     Client(const std::string& host, const uint16_t port, std::string cert, std::string key, std::string ca)
-        : SocketClient(host, port, cert, key, ca)
+        : SocketClient(host, port, cert, key, ca, WEB)
     {}
 
     void OnOff() {

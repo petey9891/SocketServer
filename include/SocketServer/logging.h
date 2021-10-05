@@ -4,12 +4,12 @@
 #include <ctime>
 #include <asio.hpp>
 
-enum ClientType {
+enum ProgramType {
     server,
     client
 };
 
-std::string inline ClientTypeToString(ClientType type) {
+std::string inline ProgramTypeToString(ProgramType type) {
     switch (type) {
         case server: return "SERVER";
         case client: return "CLIENT";

@@ -32,6 +32,10 @@ enum MessageType: uint32_t {
     SetSolidColor
 };
 
+enum ClientType: uint8_t {
+    WEB,
+    CUBE
+};
 template <typename T>
 struct MessageHeader {
     T id {};
