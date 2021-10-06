@@ -138,6 +138,7 @@ public:
             this->pulse_timer.expires_from_now(asio::chrono::seconds(10));
             this->pulse_timer.async_wait([this](const std::error_code& err) {
                 if (!err) {
+                    LOG(DEBUG, "Sending pulse check");
                     Message<MessageType> message;
                     message.header.id = ServerPing;
                     this->m_connection->Send(message);

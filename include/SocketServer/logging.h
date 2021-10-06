@@ -32,7 +32,7 @@ enum LogLevel {
     ERROR
 };
 
-#define CURRENT_LOG_LEVEL DEBUG
+#define CURRENT_LOG_LEVEL INFO
 
 bool inline validateLog(LogLevel level) {
     // adding this logic to lock out logging when level is error
