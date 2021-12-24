@@ -40,6 +40,9 @@ protected:
             case SetSolidColor:
                 this->MessageAllClients(msg, client);
                 break;
+            case Christmas:
+                this->MessageAllClients(msg, client);
+                break;
             case Success:
                 break;
         }
