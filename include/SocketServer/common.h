@@ -30,7 +30,7 @@ enum MessageType: uint32_t {
     CubePulse,
     CubeRehoboam,
     SetSolidColor,
-    Christmas
+    CubeChristmas
 };
 
 enum ClientType: uint8_t {

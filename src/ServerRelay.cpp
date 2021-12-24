@@ -40,7 +40,7 @@ protected:
             case SetSolidColor:
                 this->MessageAllClients(msg, client);
                 break;
-            case Christmas:
+            case CubeChristmas:
                 this->MessageAllClients(msg, client);
                 break;
             case Success:
