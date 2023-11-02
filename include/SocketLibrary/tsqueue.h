@@ -140,15 +140,30 @@ namespace Rehoboam {
             // Additional Functionality
 
             /**
+             * @brief Returns a boolean indicating if this tsqueue has been released
+             */
+            bool isReleased() {
+                std::scoped_lock lock(this->m_muxBlocking);
+                return this->m_released;
+            }
+
+            /**
+             * @brief Marks the tsqueue as ready to release it's resources
+             */
+            void release() {
+                std::unique_lock<std::mutex> ul(this->m_muxBlocking);
+                this->m_released = true;
+                this->m_cvBlocking.notify_all(); // Wake up all waiting threads.
+            }
+
+            /**
              * @brief Waits until the queue is not empty.
              *
              * This function will block the current thread until the queue has at least one item.
              */
             void wait() {
-                while (this->empty()) {
-                    std::unique_lock<std::mutex> ul(m_muxBlocking);
-                    m_cvBlocking.wait(ul);
-                }
+                std::unique_lock<std::mutex> ul(m_muxBlocking);
+                m_cvBlocking.wait(ul, [this]() { return !this->m_deqQueue.empty() || this->m_released; });
             }
 
         protected:
@@ -163,6 +178,10 @@ namespace Rehoboam {
 
             // Mutex used with the condition variable.
             std::mutex m_muxBlocking;
+
+            // A flag to indicate if the tsqueue can be released.
+            bool m_released = false;
+
         };
     }  // namespace SocketLibrary
 }  // namespace Rehoboam

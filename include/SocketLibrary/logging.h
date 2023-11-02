@@ -5,11 +5,13 @@
 #include <ctime>
 #include <asio.hpp>
 
+// Define the current log level for the application only if not already defined
+#ifndef RSL_LOG_LEVEL
+#define RSL_LOG_LEVEL INFO
+#endif
+
 namespace Rehoboam {
     namespace SocketLibrary {
-
-        // Define the current log level for the application.
-        #define CURRENT_LOG_LEVEL INFO
 
         /**
          * @enum ProgramType
@@ -61,7 +63,7 @@ namespace Rehoboam {
          * @return True if the message should be logged, false otherwise.
          */
         bool inline validateLog(LogLevel level) {
-            return (CURRENT_LOG_LEVEL == level) || (level == INFO) || (level == ERROR);
+            return (RSL_LOG_LEVEL == level) || (level == INFO) || (level == ERROR);
         }
 
         /**

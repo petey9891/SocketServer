@@ -38,7 +38,11 @@ namespace Rehoboam {
             * @brief Destructor for SocketClient.
             */
             virtual ~SocketClient() {
-                this->Disconnect();
+                try {
+                    this->Disconnect();
+                } catch (const std::exception& e) {
+                    LOG(ERROR, "Error during disconnection", e.what());
+                }
             }
 
             /**
@@ -166,16 +170,47 @@ namespace Rehoboam {
              * @brief Disconnect from the server.
              */
             void Disconnect() {
+                LOG(DEBUG, "Processing disconnect");
+
                 if (this->IsConnected()) {
-                    this->m_connection->Disconnect();
+                    try {
+                        this->m_connection->Disconnect();
+                        LOG(DEBUG, "m_connection disconnect");
+                    } catch (const std::exception& e) {
+                        // Handle or log the exception
+                        LOG(ERROR, "Error during disconnection", e.what());
+                    }
                 }
 
-                this->m_io_context.stop();
 
-                if (this->m_thread_context.joinable()) this->m_thread_context.join();
-                if (this->m_message_thread.joinable()) this->m_message_thread.join();
+                if (this->m_io_context.stopped() == false) {
+                    this->m_io_context.stop();
+                    LOG(DEBUG, "m_io_context stopped");
+                }
 
+                if (this->m_thread_context.joinable()) {
+                    try {
+                        this->m_thread_context.join();
+                        LOG(DEBUG, "m_thread_context stopped");
+                    } catch (const std::exception& e) {
+                        LOG(ERROR, "Error while joining thread context: ", e.what());
+                    }
+                }
+
+                if (this->m_message_thread.joinable()) {
+                    try {
+                        this->m_qMessagesIn.release();
+                        this->m_message_thread.join();
+                        LOG(DEBUG, "m_message_thread stopped");
+                    } catch (const std::exception& e) {
+                        LOG(ERROR, "Error while joining message_thread context: ", e.what());
+                    }
+                }
+
+                LOG(DEBUG, "Releasing connection...");
                 this->m_connection.release();
+                LOG(DEBUG, "Connection released");
+                LOG(INFO, "Disconnected from server");
             }
 
             /**
@@ -196,11 +231,15 @@ namespace Rehoboam {
              */
             void HandleMessages() {
                 this->m_message_thread = std::thread([this]() {
-                    while (true) {
+                    while (!this->m_qMessagesIn.isReleased()) {
                         this->m_qMessagesIn.wait();
                         while (!this->m_qMessagesIn.empty()) {
                             auto ownedMessage = this->m_qMessagesIn.pop_front();
                             this->OnMessageReceived(ownedMessage.message);
+
+                            if (this->m_qMessagesIn.isReleased()) {
+                                break;
+                            }
                         }
                     }
                 });
@@ -295,7 +334,6 @@ namespace Rehoboam {
 
             // Counter for connection errors.
             uint8_t m_errorCount;
-
         };
     }  // namespace SocketLibrary
 }  // namespace Rehoboam
