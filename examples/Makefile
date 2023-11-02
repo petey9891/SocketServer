@@ -24,7 +24,7 @@ CUBE_CLIENT_SOURCES := $(wildcard $(CUBE_CLIENT_SRC_DIR)/*.cpp)
 CUBE_CLIENT_OBJECTS := $(patsubst $(CUBE_CLIENT_SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CUBE_CLIENT_SOURCES))
 COMPILED_CUBE_CLIENT_OBJECTS := $(wildcard $(OBJ_DIR)/CubeExample.o)
 
-CPPFLAGS :=-std=c++17 -I../include -MMD -MP
+CPPFLAGS :=-std=c++20 -I../include -MMD -MP
 CXXFLAGS :=-O0 -W -Wall -Wextra -Wno-unused-parameter -D_FILE_OFFSET_BITS=64
 LDLIBS :=-L../lib -lssl -ldl -lcrypto -lpthread
 

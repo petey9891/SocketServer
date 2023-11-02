@@ -1,1 +1,1 @@
-# SocketServer
+# Rehoboam Socket Library

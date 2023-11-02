@@ -1,0 +1,2 @@
+xargs sudo rm -rf < build/install_manifest.txt
+sudo rm -rf build

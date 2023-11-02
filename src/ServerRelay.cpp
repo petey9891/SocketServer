@@ -1,8 +1,11 @@
-#include <SocketServer/common.h>
-#include <SocketServer/SocketServer.h>
-#include <SocketServer/SocketConnection.h>
+#include <Rehoboam/SocketLibrary/common.h>
+#include <Rehoboam/SocketLibrary/SocketServer.h>
+#include <Rehoboam/SocketLibrary/SocketConnection.h>
+
 #include "config.h"
 #include <unordered_set>
+
+using namespace Rehoboam::SocketLibrary;
 
 class ServerRelay: public SocketServer<MessageType> {
 public:
@@ -17,9 +20,9 @@ protected:
         return false; 
     }
     void OnMessageReceived(std::shared_ptr<SocketConnection<MessageType>> client, Message<MessageType>& msg) override {
-        if (msg.header.id == Success) return;
+        if (msg.header.id == MessageType::Success) return;
 
-        if (msg.header.id == ServerPing) {
+        if (msg.header.id == MessageType::ServerPing) {
             client->Send(msg);
         } else {
             this->MessageAllClients(msg, client);

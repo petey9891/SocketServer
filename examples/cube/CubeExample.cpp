@@ -1,9 +1,11 @@
-#include <SocketServer/common.h>
-#include <SocketServer/SocketClient.h>
+#include <Rehoboam/SocketLibrary/common.h>
+#include <Rehoboam/SocketLibrary/SocketClient.h>
 
 #include <iostream>
 #include <chrono>
 #include "../config.h"
+
+using namespace Rehoboam::SocketLibrary;
 
 class Cube: public SocketClient<MessageType> {
 private:
@@ -15,11 +17,11 @@ public:
     {}
 
     void OnMessageReceived(Message<MessageType>& msg) override {
-        if (msg.header.id == Success) return;
+        if (msg.header.id == MessageType::Success) return;
 
-        if (msg.header.id == ServerPing) {
+        if (msg.header.id == MessageType::ServerPing) {
             printf("Heartbeat has been acknowledge\n");
-        } else if (msg.header.id == CubeDisplayToggle) {
+        } else if (msg.header.id == MessageType::CubeDisplayToggle) {
             if (!power) {
                 power = true;
                 printf("The power is on\n");
@@ -27,11 +29,11 @@ public:
                 power = false;
                 printf("The power is off\n");
             }
-        } else if (msg.header.id == CubeBrightness) {
+        } else if (msg.header.id == MessageType::CubeBrightness) {
             uint8_t value;
             msg >> value;
             printf("Brightness: %d\n", value);
-        } else if (msg.header.id == CubeDisplayChange) {
+        } else if (msg.header.id == MessageType::CubeDisplayChange) {
             uint8_t value;
             msg >> value;
             printf("New Display: %d\n", value);

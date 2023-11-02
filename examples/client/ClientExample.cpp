@@ -1,9 +1,11 @@
-#include <SocketServer/common.h>
-#include <SocketServer/SocketClient.h>
+#include <Rehoboam/SocketLibrary/common.h>
+#include <Rehoboam/SocketLibrary/SocketClient.h>
 
 #include <iostream>
 #include <chrono>
 #include "../config.h"
+
+using namespace Rehoboam::SocketLibrary;
 
 class Client: public SocketClient<MessageType> {
 private:

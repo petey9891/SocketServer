@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Function to install packages on Ubuntu
+install_ubuntu() {
+  sudo apt-get update
+  sudo apt-get install -y libasio-dev libssl-dev libcrypto++-dev
+}
+
+# Function to install packages on macOS
+install_macos() {
+  brew install asio openssl
+}
+
+# Function to print a message for Windows users
+install_windows() {
+  echo "Please make sure you have MSYS2 or Cygwin installed to run bash scripts on Windows."
+  echo "You can install the required libraries using the package manager provided by your environment."
+  echo "For MSYS2, you might use 'pacman' to install the packages."
+}
+
+# Detect the operating system
+OS="$(uname -s)"
+case "${OS}" in
+  Linux*)     install_ubuntu;;
+  Darwin*)    install_macos;;
+  CYGWIN*|MINGW*|MSYS*) install_windows;;
+  *)          echo "Unknown operating system: ${OS}" ;;
+esac
