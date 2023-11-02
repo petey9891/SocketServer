@@ -13,9 +13,9 @@ public:
         : SocketClient(host, port, cert, key, ca, WEB)
     {}
 
-    void OnOff() {
+    void ToggleOnOff() {
         Message<MessageType> message;
-        message.header.id = CubeDisplayOnOff;
+        message.header.id = CubeDisplayToggle;
         this->Send(message);
     }
 
@@ -27,15 +27,11 @@ public:
         this->Send(message);
     }
 
-    void Pulse() {
+    void ChangeDisplay(uint8_t mode) {
         Message<MessageType> message;
-        message.header.id = CubePulse;
-        this->Send(message);
-    }
+        message.header.id = CubeDisplayChange;
 
-    void Rehoboam() {
-        Message<MessageType> message;
-        message.header.id = CubeRehoboam;
+        message << mode;
         this->Send(message);
     }
 
@@ -63,7 +59,7 @@ int main(void) {
 
     client.Connect();
 
-    printf("Commands:\n\n1)\tOn/Off\n2)\tBrightness <value>\n3)\tPulse\n4)\tRehoboam\n5)\tPing\n6)\tShutdown\n");
+    printf("Commands:\n\n1)\tOn/Off\n2)\tBrightness <value>\n3)\tMode <value>\n4)\tPing\n5)\tShutdown\n");
 
     uint8_t input;
 
@@ -73,7 +69,7 @@ int main(void) {
         std::cin >> input;
 
         if (input == '1') {
-            client.OnOff();
+            client.ToggleOnOff();
             waitingForAck = true;
         } else if (input == '2') {
             int brightness;
@@ -87,15 +83,17 @@ int main(void) {
                 waitingForAck = true;
             }
         } else if (input == '3') {
-            client.Pulse();
+            int mode;
+            printf(">>> Input a mode: ");
+            std::cin >> mode;
+
+            client.ChangeDisplay(mode);
+
             waitingForAck = true;
         } else if (input == '4') {
-            client.Rehoboam();
-            waitingForAck = true;
-        } else if (input == '5') {
             client.Ping();
             // waitingForAck = true;
-        } else if (input == '6') {
+        } else if (input == '5') {
             char confirm;
             printf(">>> Are you sure you want to shutdown? (y/n): ");
             std::cin >> confirm;

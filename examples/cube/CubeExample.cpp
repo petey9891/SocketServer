@@ -14,40 +14,27 @@ public:
         : SocketClient(host, port, cert, key, ca, CUBE)
     {}
 
-    void OnMessageRecieved(Message<MessageType>& msg) override {
-        switch (msg.header.id) {
-            case ServerPing:
-                printf("Heartbeat has been acknowledge\n");
-                break;
-            case CubeDisplayOnOff:
-                if (!power) {
-                    power = true;
-                    printf("The power is on\n");
-                } else {
-                    power = false;
-                    printf("The power is off\n");
-                }
-                break;
-            case CubeBrightness:
-                uint8_t value;
-                msg >> value;
-                printf("Brightness: %d\n", value);
-                break;
-            case CubePulse:
-                printf("The cube is pulsing\n");
-                break;
-            case CubeRehoboam:
-                printf("The cube is rehoboaming\n");
-                break;
-            case ServerShutdown:
-                this->Disconnect();
-                printf("The cube is shutting down\n");
-                break;
-            case SetSolidColor:
-                printf("Setting the solid color\n");
-                break;
-            case Success:
-                break;
+    void OnMessageReceived(Message<MessageType>& msg) override {
+        if (msg.header.id == Success) return;
+
+        if (msg.header.id == ServerPing) {
+            printf("Heartbeat has been acknowledge\n");
+        } else if (msg.header.id == CubeDisplayToggle) {
+            if (!power) {
+                power = true;
+                printf("The power is on\n");
+            } else {
+                power = false;
+                printf("The power is off\n");
+            }
+        } else if (msg.header.id == CubeBrightness) {
+            uint8_t value;
+            msg >> value;
+            printf("Brightness: %d\n", value);
+        } else if (msg.header.id == CubeDisplayChange) {
+            uint8_t value;
+            msg >> value;
+            printf("New Display: %d\n", value);
         }
     }
 };

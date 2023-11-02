@@ -16,35 +16,13 @@ protected:
         }
         return false; 
     }
-    void OnMessageRecieved(std::shared_ptr<SocketConnection<MessageType> > client, Message<MessageType>& msg) override {
-        switch (msg.header.id) {
-            case ServerPing:
-                // Simply bounce back the message
-                client->Send(msg);
-                break;
-            case CubeDisplayOnOff:
-                this->MessageAllClients(msg, client);
-                break;
-            case CubeBrightness:
-                this->MessageAllClients(msg, client);
-                break;
-            case CubePulse:
-                this->MessageAllClients(msg, client);
-                break;
-            case CubeRehoboam:
-                this->MessageAllClients(msg, client);
-                break;
-            case ServerShutdown:
-                this->MessageAllClients(msg, client);
-                break;
-            case SetSolidColor:
-                this->MessageAllClients(msg, client);
-                break;
-            case CubeChristmas:
-                this->MessageAllClients(msg, client);
-                break;
-            case Success:
-                break;
+    void OnMessageReceived(std::shared_ptr<SocketConnection<MessageType>> client, Message<MessageType>& msg) override {
+        if (msg.header.id == Success) return;
+
+        if (msg.header.id == ServerPing) {
+            client->Send(msg);
+        } else {
+            this->MessageAllClients(msg, client);
         }
     }
 };
